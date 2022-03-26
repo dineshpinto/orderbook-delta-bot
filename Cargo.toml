@@ -1,0 +1,12 @@
+[package]
+name = "ftx-funding-rate-bot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ftx = "0.4.3"
+tokio = { version = "1.17.0",  features = ["full"] }
+rust_decimal = "1.22.0"
+ta = "0.5.0"
