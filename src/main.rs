@@ -1,15 +1,14 @@
-use std::{thread, time::Duration, error::Error};
+use std::{error::Error, thread, time::Duration};
 use std::fs::OpenOptions;
 
+use chrono::prelude::*;
+use csv::Writer;
 use ftx::{
     options::{Endpoint, Options},
     rest::{GetFuture, GetOrderBook, Rest},
 };
 use rust_decimal::prelude::ToPrimitive;
-use ta::{Next, indicators::BollingerBands};
-use csv::Writer;
-use chrono::prelude::*;
-
+use ta::{indicators::BollingerBands, Next};
 
 fn write_to_csv( _utc_time: String, _price: String, _position: String) -> Result<(), Box<dyn Error>> {
     /* Write utc time, price and position to a csv file */
@@ -91,12 +90,12 @@ async fn main() {
 
                 if perp_delta > bb_upper {
                     price = btc_price.ask.unwrap().to_f64().unwrap();
-                    position = "long".to_string();
+                    position = "short".to_string();
                     println!("{:?} Perp delta above upper bb, going {} at {:.2}",
                              utc_time, position, price);
                 } else if perp_delta < bb_lower {
                     price = btc_price.bid.unwrap().to_f64().unwrap();
-                    position = "short".to_string();
+                    position = "long".to_string();
                     println!("{:?} Perp delta below lower bb, going {} at {:.2}",
                              utc_time, position, price);
                 }
