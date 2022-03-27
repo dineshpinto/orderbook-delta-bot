@@ -1,17 +1,26 @@
 use std::{thread, time::Duration};
+use std::error::Error;
 
-use csv::Writer;
 use ftx::{
     options::{Endpoint, Options},
-    rest::{GetFuture, GetOrderBook, Rest, Result},
+    rest::{GetFuture, GetOrderBook, Rest},
 };
-use ftx::ws::Channel::Orderbook;
 use rust_decimal::prelude::ToPrimitive;
 use ta::indicators::BollingerBands;
 use ta::Next;
+use csv::Writer;
+
+
+fn example() -> Result<(), Box<dyn Error>> {
+    let mut wtr = Writer::from_path("foo.csv")?;
+    wtr.write_record(&["a", "b", "c"])?;
+    wtr.write_record(&["x", "y", "z"])?;
+    wtr.flush()?;
+    Ok(())
+}
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     // Time gap in seconds between points
     const TIME_DELTA: u64 = 5;
     // Period and standard deviation of bollinger bands
@@ -32,7 +41,15 @@ async fn main() -> Result<()> {
         count += 1;
         let order_book = api.request(
             GetOrderBook { market_name: "BTC-PERP".to_string(), depth: 1.to_u32() }
-        ).await?;
+        ).await;
+
+        let order_book = match order_book {
+            Err(e) => {
+                println!("Error: {:?}", e);
+                continue
+            },
+            Ok(o) => o
+        };
 
         let perp_delta = (order_book.bids[0].1 - order_book.asks[0].1).to_f64().unwrap();
 
@@ -50,22 +67,32 @@ async fn main() -> Result<()> {
             if perp_delta > bb_upper || perp_delta < bb_lower {
                 let btc_price = api.request(
                     GetFuture { future_name: "BTC-PERP".to_string() }
-                ).await?;
-                let price: f64 = 0.0;
-                let position: String = "none".to_string();
+                ).await;
+
+                let btc_price = match btc_price {
+                    Err(e) => {
+                        println!("Error: {:?}", e);
+                        continue
+                    },
+                    Ok(o) => o
+                };
+
+                let mut price: f64 = 0.0;
+                let mut position: String = "none".to_string();
 
                 if perp_delta > bb_upper {
-                    let price = btc_price.bid.unwrap().to_f64().unwrap();
-                    let position = "short";
+                    price = btc_price.bid.unwrap().to_f64().unwrap();
+                    position = "short".to_string();
                     println!("Perp delta above upper bb, going {} at {:.2}", position, price);
                 } else {
-                    let price = btc_price.bid.unwrap().to_f64().unwrap();
-                    let position = "long";
+                    price = btc_price.bid.unwrap().to_f64().unwrap();
+                    position = "long".to_string();
                     println!("Perp delta below lower bb, going {} at {:.2}", position, price);
                 }
+                example();
+                break
             }
         }
         thread::sleep(Duration::from_secs(TIME_DELTA));
     }
-    Ok(())
 }
