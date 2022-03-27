@@ -1,5 +1,5 @@
 [package]
-name = "ftx-funding-rate-bot"
+name = "orderbook-delta-bot"
 version = "0.1.0"
 edition = "2021"
 

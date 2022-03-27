@@ -273,18 +273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ftx-funding-rate-bot"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "csv",
- "ftx",
- "rust_decimal",
- "ta",
- "tokio",
-]
-
-[[package]]
 name = "futures"
 version = "0.3.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -753,6 +741,18 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "orderbook-delta-bot"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "csv",
+ "ftx",
+ "rust_decimal",
+ "ta",
+ "tokio",
 ]
 
 [[package]]
