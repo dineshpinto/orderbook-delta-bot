@@ -1,20 +1,27 @@
-use std::{thread, time::Duration};
-use std::error::Error;
+use std::{thread, time::Duration, error::Error};
+use std::fs::OpenOptions;
 
 use ftx::{
     options::{Endpoint, Options},
     rest::{GetFuture, GetOrderBook, Rest},
 };
 use rust_decimal::prelude::ToPrimitive;
-use ta::indicators::BollingerBands;
-use ta::Next;
+use ta::{Next, indicators::BollingerBands};
 use csv::Writer;
+use chrono::prelude::*;
 
 
-fn example() -> Result<(), Box<dyn Error>> {
-    let mut wtr = Writer::from_path("foo.csv")?;
-    wtr.write_record(&["a", "b", "c"])?;
-    wtr.write_record(&["x", "y", "z"])?;
+fn write_to_csv( _utc_time: String, _price: String, _position: String) -> Result<(), Box<dyn Error>> {
+    /* Write utc time, price and position to a csv file */
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open("positions.csv")
+        .unwrap();
+    let mut wtr = Writer::from_writer(file);
+
+    wtr.write_record(&[_utc_time, _price, _position])?;
     wtr.flush()?;
     Ok(())
 }
@@ -68,6 +75,8 @@ async fn main() {
                 let btc_price = api.request(
                     GetFuture { future_name: "BTC-PERP".to_string() }
                 ).await;
+                let utc_time: DateTime<Utc> = Utc::now();
+
 
                 let btc_price = match btc_price {
                     Err(e) => {
@@ -81,16 +90,18 @@ async fn main() {
                 let mut position: String = "none".to_string();
 
                 if perp_delta > bb_upper {
+                    price = btc_price.ask.unwrap().to_f64().unwrap();
+                    position = "long".to_string();
+                    println!("{:?} Perp delta above upper bb, going {} at {:.2}",
+                             utc_time, position, price);
+                } else if perp_delta < bb_lower {
                     price = btc_price.bid.unwrap().to_f64().unwrap();
                     position = "short".to_string();
-                    println!("Perp delta above upper bb, going {} at {:.2}", position, price);
-                } else {
-                    price = btc_price.bid.unwrap().to_f64().unwrap();
-                    position = "long".to_string();
-                    println!("Perp delta below lower bb, going {} at {:.2}", position, price);
+                    println!("{:?} Perp delta below lower bb, going {} at {:.2}",
+                             utc_time, position, price);
                 }
-                example();
-                break
+                // Write the positions to a csv
+                write_to_csv(utc_time.to_string(), price.to_string(), position);
             }
         }
         thread::sleep(Duration::from_secs(TIME_DELTA));

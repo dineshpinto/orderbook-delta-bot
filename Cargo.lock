@@ -276,6 +276,7 @@ dependencies = [
 name = "ftx-funding-rate-bot"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "csv",
  "ftx",
  "rust_decimal",
