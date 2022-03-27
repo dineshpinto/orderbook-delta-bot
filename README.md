@@ -5,7 +5,7 @@ A trading bot written in Rust.
 The strategy based on the concept of *mean reversion*. We look for large deviations in the volume delta of BTC-PERP on FTX at a depth of 1. 
 These deviations could be caused by over-enthusiastic and over-leveraged market participants.
 
-We counter-trade those deviations, and enter short/long positions based on triggers given by a large delta (> 2 SDs) 
+We counter-trade those deviations, and enter short/long positions based on triggers given by a large deviation (> 2 SDs) on the orderbook delta 
 from a (10-20) period rolling bollinger band.
 
 We are testing this with BTC-PERP on FTX, which has good liquidity and small spreads. 
