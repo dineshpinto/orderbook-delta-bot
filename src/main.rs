@@ -1,5 +1,10 @@
-use std::{error::Error, thread, time::Duration};
-use std::fs::OpenOptions;
+use std::{
+    error::Error,
+    fs::{File, OpenOptions},
+    path::Path,
+    thread,
+    time::Duration
+};
 
 use chrono::prelude::*;
 use csv::Writer;
@@ -8,7 +13,17 @@ use ftx::{
     rest::{GetFuture, GetOrderBook, Rest},
 };
 use rust_decimal::prelude::ToPrimitive;
+use serde::{Deserialize, Serialize};
+use serde_json;
 use ta::{indicators::BollingerBands, Next};
+
+#[derive(Serialize, Deserialize)]
+struct SettingsFile {
+    time_delta: u64,
+    bb_period: usize,
+    bb_std_dev: f64,
+    orderbook_depth: u32
+}
 
 fn write_to_csv( _utc_time: String, _price: String, _position: String) -> Result<(), Box<dyn Error>> {
     /* Write utc time, price and position to a csv file */
@@ -27,11 +42,21 @@ fn write_to_csv( _utc_time: String, _price: String, _position: String) -> Result
 
 #[tokio::main]
 async fn main() {
-    // Time gap in seconds between points
-    const TIME_DELTA: u64 = 5;
-    // Period and standard deviation of bollinger bands
-    const BB_PERIOD: usize = 20;
-    const BB_STD_DEV: f64 = 2.0;
+    // Load configuration file
+    let settings_filepath = Path::new("settings.json");
+    let settings_file = File::open(settings_filepath).expect("Config file not found");
+    let settings: SettingsFile =
+        serde_json::from_reader(settings_file).expect("Error when reading config json");
+
+    println!(
+        "Settings file loaded from {:?}. time_delta={:?}, bb_period={:?}, bb_std_dev={:?}, \
+        orderbook_depth={:?}",
+        settings_filepath,
+        settings.time_delta,
+        settings.bb_period,
+        settings.bb_std_dev,
+        settings.orderbook_depth
+    );
 
     // Set up connection to FTX API
     let api = Rest::new(
@@ -39,14 +64,14 @@ async fn main() {
     );
 
     // Set up bollinger bands
-    let mut bb = BollingerBands::new(BB_PERIOD, BB_STD_DEV).unwrap();
+    let mut bb = BollingerBands::new(settings.bb_period, settings.bb_std_dev).unwrap();
 
     let mut count: usize = 0;
 
     loop {
         count += 1;
         let order_book = api.request(
-            GetOrderBook { market_name: "BTC-PERP".to_string(), depth: 1.to_u32() }
+            GetOrderBook { market_name: "BTC-PERP".to_string(), depth: Option::from(settings.orderbook_depth) }
         ).await;
 
         let order_book = match order_book {
@@ -65,8 +90,8 @@ async fn main() {
 
         println!("perp_delta={:.2}, bb_lower={:.2}, bb_upper={:.2}", perp_delta, bb_lower, bb_upper);
 
-        if count > BB_PERIOD {
-            if count == BB_PERIOD + 1 {
+        if count > settings.bb_period {
+            if count == settings.bb_period + 1 {
                 println!("Trigger is now set...")
             }
 
@@ -103,6 +128,6 @@ async fn main() {
                 write_to_csv(utc_time.to_string(), price.to_string(), position);
             }
         }
-        thread::sleep(Duration::from_secs(TIME_DELTA));
+        thread::sleep(Duration::from_secs(settings.time_delta));
     }
 }

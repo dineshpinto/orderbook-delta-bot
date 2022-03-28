@@ -751,6 +751,8 @@ dependencies = [
  "csv",
  "ftx",
  "rust_decimal",
+ "serde",
+ "serde_json",
  "ta",
  "tokio",
 ]
