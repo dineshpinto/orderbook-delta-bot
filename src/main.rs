@@ -4,7 +4,7 @@ use std::{
     io::BufReader,
     path::Path,
     thread,
-    time::Duration
+    time::Duration,
 };
 
 use chrono::prelude::*;
@@ -14,7 +14,7 @@ use ftx::{
     options::{Endpoint, Options},
     rest::{GetFuture, GetOrderBook, Rest},
 };
-use log::{debug, info, LevelFilter, trace, warn};
+use log::{debug, error, info, LevelFilter, warn};
 use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -26,20 +26,24 @@ struct SettingsFile {
     time_delta: u64,
     bb_period: usize,
     bb_std_dev: f64,
-    orderbook_depth: u32
+    orderbook_depth: u32,
+    live: bool,
+    positions_filename: String,
 }
 
-fn write_to_csv( _utc_time: String, _price: String, _position: String) -> Result<(), Box<dyn Error>> {
+fn write_to_csv(filename: &str, _price: String, _position: String) -> Result<(), Box<dyn Error>> {
     /* Write utc time, price and position to a csv file */
-    let mut file = OpenOptions::new()
+    let utc_time: DateTime<Utc> = Utc::now();
+
+    let file = OpenOptions::new()
         .write(true)
         .create(true)
         .append(true)
-        .open("positions.csv")
+        .open(String::from(filename))
         .unwrap();
     let mut wtr = Writer::from_writer(file);
-
-    wtr.write_record(&[_utc_time, _price, _position])?;
+    debug!("Writing position to {:?}", String::from(filename));
+    wtr.write_record(&[utc_time.to_string(), _price, _position])?;
     wtr.flush()?;
     Ok(())
 }
@@ -53,7 +57,7 @@ async fn main() {
     let settings: SettingsFile =
         serde_json::from_reader(reader).expect("Error when reading config json");
 
-    let mut builder= Builder::new();
+    let mut builder = Builder::new();
     builder
         .filter(None, LevelFilter::Info)
         .write_style(WriteStyle::Always)
@@ -62,20 +66,27 @@ async fn main() {
 
     info!("Settings file loaded from {:?}.", settings_filepath);
     info!(
-        "market_name={:?}, time_delta={:?}, bb_period={:?}, bb_std_dev={:?}, orderbook_depth={:?}",
+        "market_name={:?}, time_delta={:?}, bb_period={:?}, bb_std_dev={:?}, orderbook_depth={:?}, \
+        positions_filename={:?}",
         String::from(&settings.market_name),
         settings.time_delta,
         settings.bb_period,
         settings.bb_std_dev,
-        settings.orderbook_depth
+        settings.orderbook_depth,
+        settings.positions_filename
     );
+    if settings.live {
+        warn!("The bot is running live")
+    }
     info!("Setting trigger in {:?} iterations (approx {:?}s)...",
         settings.bb_period, settings.bb_period * settings.time_delta.to_usize().unwrap());
 
     // Set up connection to FTX API
-    let api = Rest::new(
-        Options { endpoint: Endpoint::Com, ..Default::default() }
-    );
+    let api = if settings.live {
+        Rest::new(Options::from_env())
+    } else {
+        Rest::new(Options { endpoint: Endpoint::Com, ..Default::default() })
+    };
 
     // Set up bollinger bands
     let mut bb = BollingerBands::new(settings.bb_period, settings.bb_std_dev).unwrap();
@@ -85,19 +96,23 @@ async fn main() {
     loop {
         count += 1;
         let order_book = api.request(
-            GetOrderBook { market_name: String::from(&settings.market_name), depth: Option::from(settings.orderbook_depth) }
+            GetOrderBook {
+                market_name: String::from(&settings.market_name),
+                depth: Option::from(settings.orderbook_depth),
+            }
         ).await;
 
+        // Continue loop is getting orderbook fails
         let order_book = match order_book {
             Err(e) => {
-                warn!("Error: {:?}", e);
-                continue
-            },
+                error!("Error: {:?}", e);
+                continue;
+            }
             Ok(o) => o
         };
 
+        // Calculate values used for analysis
         let perp_delta = (order_book.bids[0].1 - order_book.asks[0].1).to_f64().unwrap();
-
         let out = bb.next(perp_delta);
         let bb_lower = out.lower;
         let bb_upper = out.upper;
@@ -114,12 +129,11 @@ async fn main() {
                     GetFuture { future_name: String::from(&settings.market_name) }
                 ).await;
 
-
                 let btc_price = match btc_price {
                     Err(e) => {
-                        warn!("Error: {:?}", e);
-                        continue
-                    },
+                        error!("Error: {:?}", e);
+                        continue;
+                    }
                     Ok(o) => o
                 };
 
@@ -127,17 +141,23 @@ async fn main() {
                 let mut position: String = "none".to_string();
 
                 if perp_delta > bb_upper {
+                    // Enter long position
                     price = btc_price.ask.unwrap().to_f64().unwrap();
-                    position = "short".to_string();
+                    position = "long".to_string();
                     warn!("Perp delta above upper bb, going {} at {:.2}", position, price);
                 } else if perp_delta < bb_lower {
+                    // Enter short position
                     price = btc_price.bid.unwrap().to_f64().unwrap();
-                    position = "long".to_string();
+                    position = "short".to_string();
                     warn!("Perp delta below lower bb, going {} at {:.2}", position, price);
                 }
+
                 // Write the positions to a csv
-                let utc_time: DateTime<Utc> = Utc::now();
-                write_to_csv(utc_time.to_string(), price.to_string(), position);
+                write_to_csv(
+                    &settings.positions_filename,
+                    price.to_string(),
+                    position,
+                ).expect("Unable to write positions to file.");
             }
         }
         thread::sleep(Duration::from_secs(settings.time_delta));

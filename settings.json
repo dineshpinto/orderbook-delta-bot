@@ -3,5 +3,7 @@
   "time_delta": 5,
   "bb_period": 20,
   "bb_std_dev": 2.0,
-  "orderbook_depth": 1
+  "orderbook_depth": 1,
+  "live": false,
+  "positions_filename": "positions.csv"
 }
