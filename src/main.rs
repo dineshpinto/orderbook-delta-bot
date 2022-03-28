@@ -8,7 +8,7 @@ use std::{
     time::Duration
 };
 
-use chrono::prelude::*;
+use chrono::prelude::{DateTime, Utc};
 use csv::Writer;
 use env_logger::{Builder, Target, WriteStyle};
 use ftx::{
@@ -30,6 +30,13 @@ struct SettingsFile {
     orderbook_depth: u32,
     live: bool,
     positions_filename: String,
+}
+
+#[derive(Debug)]
+enum Position {
+    Long,
+    Short,
+    None
 }
 
 fn write_to_csv(filename: &str, price: &f64, position: &str) -> Result<(), Box<dyn Error>> {
