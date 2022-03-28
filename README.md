@@ -13,16 +13,15 @@ In principle, the scheme could be modified for lower liquidity pairs too, perhap
 
 We use the definitions : 
 
-| Name | Definition |
-| --- | --- |
-`delta_perp`| Difference between bid and ask volume at depth = 1 on BTC-PERP
-`bb_upper` | Upper bollinger band of `delta_perp`
-`bb_lower` | Lower bollinger band of `delta_perp`
+| Name         | Definition                                                     |
+|--------------|----------------------------------------------------------------|
+| `delta_perp` | Difference between bid and ask volume at depth = 1 on BTC-PERP |
+| `bb_upper`   | Upper bollinger band of `delta_perp`                           |
+| `bb_lower`   | Lower bollinger band of `delta_perp`                           |
 
-
-| Trigger | Position |
-| --- | --- |
-`delta_perp` > `bb_upper` | short
-`delta_perp` < `bb_lower` | long
+| Trigger                   | Position |
+|---------------------------|----------|
+| `delta_perp` > `bb_upper` | short    |
+| `delta_perp` < `bb_lower` | long     |
 
 A full analysis of this strategy is detailed in [here](https://github.com/dineshpinto/market-analytics).
