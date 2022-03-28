@@ -1,14 +1,4 @@
-use std;
-
-use chrono;
-use csv;
-use env_logger;
-use ftx;
-use log;
 use rust_decimal::prelude::ToPrimitive;
-use serde;
-use serde_json;
-use ta;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct SettingsFile {
@@ -38,7 +28,8 @@ impl std::fmt::Display for Position {
     }
 }
 
-fn write_to_csv(filename: &str, price: &f64, position: &Position) -> Result<(), Box<dyn std::error::Error>> {
+fn write_to_csv(filename: &str, price: &f64, position: &Position)
+    -> Result<(), Box<dyn std::error::Error>> {
     /* Write utc time, price and position to a csv file */
     let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 
@@ -59,7 +50,8 @@ fn write_to_csv(filename: &str, price: &f64, position: &Position) -> Result<(), 
 async fn main() {
     // Load configuration file
     let settings_filepath = std::path::Path::new("settings.json");
-    let settings_file = std::fs::File::open(settings_filepath).expect("Config file not found");
+    let settings_file = std::fs::File::open(settings_filepath)
+        .expect("Config file not found");
     let reader = std::io::BufReader::new(settings_file);
     let settings: SettingsFile =
         serde_json::from_reader(reader).expect("Error when reading config json");
@@ -102,7 +94,10 @@ async fn main() {
     };
 
     // Set up bollinger bands
-    let mut bb = ta::indicators::BollingerBands::new(settings.bb_period, settings.bb_std_dev).unwrap();
+    let mut bb = ta::indicators::BollingerBands::new(
+        settings.bb_period,
+        settings.bb_std_dev
+    ).unwrap();
 
     let mut count: usize = 0;
 
@@ -131,7 +126,8 @@ async fn main() {
         let bb_lower = out.lower;
         let bb_upper = out.upper;
 
-        log::debug!("perp_delta={:.2}, bb_lower={:.2}, bb_upper={:.2}", perp_delta, bb_lower, bb_upper);
+        log::debug!("perp_delta={:.2}, bb_lower={:.2}, bb_upper={:.2}",
+            perp_delta, bb_lower, bb_upper);
 
         if count > settings.bb_period {
             if count == settings.bb_period + 1 {
@@ -141,7 +137,9 @@ async fn main() {
             if perp_delta > bb_upper || perp_delta < bb_lower {
                 // Get price and handle error
                 let price = api.request(
-                    ftx::rest::GetFuture { future_name: String::from(&settings.market_name) }
+                    ftx::rest::GetFuture {
+                        future_name: String::from(&settings.market_name)
+                    }
                 ).await;
                 let btc_price = match price {
                     Err(e) => {
