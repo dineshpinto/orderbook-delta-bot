@@ -1,59 +1,18 @@
 use rust_decimal::prelude::ToPrimitive;
 
-#[derive(serde::Serialize, serde::Deserialize)]
-struct SettingsFile {
-    market_name: String,
-    time_delta: u64,
-    bb_period: usize,
-    bb_std_dev: f64,
-    orderbook_depth: u32,
-    live: bool,
-    positions_filename: String,
-}
-
-#[derive(Debug, Clone, Copy)]
-enum Position {
-    Long,
-    Short,
-    None,
-}
-
-impl std::fmt::Display for Position {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Position::Long => write!(f, "long"),
-            Position::Short => write!(f, "short"),
-            Position::None => write!(f, "none"),
-        }
-    }
-}
-
-fn write_to_csv(filename: &str, price: &f64, position: &Position)
-    -> Result<(), Box<dyn std::error::Error>> {
-    /* Write utc time, price and position to a csv file */
-    let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
-
-    let file = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .append(true)
-        .open(String::from(filename))
-        .unwrap();
-    let mut wtr = csv::Writer::from_writer(file);
-    log::debug!("Writing position to {:?}", String::from(filename));
-    wtr.write_record(&[utc_time.to_string(), price.to_string(), position.to_string()])?;
-    wtr.flush()?;
-    Ok(())
-}
+mod helpers;
 
 #[tokio::main]
 async fn main() {
+    /// Main logical loop, checks entry conditions
+    /// and enters trade if conditions are favorable
+
     // Load configuration file
     let settings_filepath = std::path::Path::new("settings.json");
     let settings_file = std::fs::File::open(settings_filepath)
         .expect("Config file not found");
     let reader = std::io::BufReader::new(settings_file);
-    let settings: SettingsFile =
+    let settings: helpers::SettingsFile =
         serde_json::from_reader(reader).expect("Error when reading config json");
 
     let mut builder = env_logger::Builder::new();
@@ -82,8 +41,7 @@ async fn main() {
 
     // Set up connection to FTX API
     let api = if settings.live {
-        ftx::rest::Rest::new(
-            ftx::options::Options::from_env())
+        ftx::rest::Rest::new(ftx::options::Options::from_env())
     } else {
         ftx::rest::Rest::new(
             ftx::options::Options {
@@ -150,22 +108,22 @@ async fn main() {
                 };
 
                 let mut price: f64 = 0.0;
-                let mut position: Position = Position::None;
+                let mut position: helpers::Position = helpers::Position::None;
 
                 if perp_delta > bb_upper {
                     // Enter long position
                     price = btc_price.ask.unwrap().to_f64().unwrap();
-                    position = Position::Long;
+                    position = helpers::Position::Long;
                     log::warn!("Perp delta above upper bb, going {:?} at {:.2}", position, price);
                 } else if perp_delta < bb_lower {
                     // Enter short position
                     price = btc_price.bid.unwrap().to_f64().unwrap();
-                    position = Position::Short;
+                    position = helpers::Position::Short;
                     log::warn!("Perp delta below lower bb, going {:?} at {:.2}", position, price);
                 }
 
                 // Write the positions to a csv
-                write_to_csv(
+                helpers::write_to_csv(
                     &settings.positions_filename,
                     &price,
                     &position,
