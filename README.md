@@ -25,4 +25,4 @@ We use the definitions :
 `delta_perp` > `bb_upper` | short
 `delta_perp` < `bb_lower` | long
 
-A full analysis of this strategy is detailed in this [Jupyter Notebook](https://github.com/dineshpinto/market-analytics/blob/main/notebooks/OrderbookDeltaAnalyzer.ipynb).
+A full analysis of this strategy is detailed in [here](https://github.com/dineshpinto/market-analytics).
