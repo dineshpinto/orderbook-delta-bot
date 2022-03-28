@@ -1,5 +1,6 @@
 use std::{
     error::Error,
+    fmt,
     fs::{File, OpenOptions},
     io::BufReader,
     path::Path,
@@ -8,20 +9,17 @@ use std::{
     time::Duration
 };
 
-use chrono::prelude::{DateTime, Utc};
-use csv::Writer;
-use env_logger::{Builder, Target, WriteStyle};
-use ftx::{
-    options::{Endpoint, Options},
-    rest::{GetFuture, GetOrderBook, Rest},
-};
+use chrono;
+use csv;
+use env_logger;
+use ftx;
 use log::{debug, error, info, LevelFilter, warn};
 use rust_decimal::prelude::ToPrimitive;
-use serde::{Deserialize, Serialize};
+use serde;
 use serde_json;
 use ta::{indicators::BollingerBands, Next};
 
-#[derive(Serialize, Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 struct SettingsFile {
     market_name: String,
     time_delta: u64,
@@ -32,16 +30,25 @@ struct SettingsFile {
     positions_filename: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Position {
     Long,
     Short,
     None
 }
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Position::Long => write!(f, "long"),
+            Position::Short => write!(f, "short"),
+            Position::None => write!(f, "none"),
+        }
+    }
+}
 
-fn write_to_csv(filename: &str, price: &f64, position: &str) -> Result<(), Box<dyn Error>> {
+fn write_to_csv(filename: &str, price: &f64, position: &Position) -> Result<(), Box<dyn Error>> {
     /* Write utc time, price and position to a csv file */
-    let utc_time: DateTime<Utc> = Utc::now();
+    let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 
     let file = OpenOptions::new()
         .write(true)
@@ -49,9 +56,9 @@ fn write_to_csv(filename: &str, price: &f64, position: &str) -> Result<(), Box<d
         .append(true)
         .open(String::from(filename))
         .unwrap();
-    let mut wtr = Writer::from_writer(file);
+    let mut wtr = csv::Writer::from_writer(file);
     debug!("Writing position to {:?}", String::from(filename));
-    wtr.write_record(&[utc_time.to_string(), price.to_string(), String::from(position)])?;
+    wtr.write_record(&[utc_time.to_string(), price.to_string(), position.to_string()])?;
     wtr.flush()?;
     Ok(())
 }
@@ -65,11 +72,11 @@ async fn main() {
     let settings: SettingsFile =
         serde_json::from_reader(reader).expect("Error when reading config json");
 
-    let mut builder = Builder::new();
+    let mut builder = env_logger::Builder::new();
     builder
         .filter(None, LevelFilter::Info)
-        .write_style(WriteStyle::Always)
-        .target(Target::Stdout)
+        .write_style(env_logger::WriteStyle::Always)
+        .target(env_logger::Target::Stdout)
         .init();
 
     info!("Settings file loaded from {:?}.", settings_filepath);
@@ -91,9 +98,14 @@ async fn main() {
 
     // Set up connection to FTX API
     let api = if settings.live {
-        Rest::new(Options::from_env())
+        ftx::rest::Rest::new(
+            ftx::options::Options::from_env())
     } else {
-        Rest::new(Options { endpoint: Endpoint::Com, ..Default::default() })
+        ftx::rest::Rest::new(
+            ftx::options::Options {
+                endpoint: ftx::options::Endpoint::Com, ..Default::default()
+            }
+        )
     };
 
     // Set up bollinger bands
@@ -106,7 +118,7 @@ async fn main() {
 
         // Get orderbook and handle error
         let order_book = api.request(
-            GetOrderBook {
+            ftx::rest::GetOrderBook {
                 market_name: String::from(&settings.market_name),
                 depth: Option::from(settings.orderbook_depth),
             }
@@ -136,7 +148,7 @@ async fn main() {
             if perp_delta > bb_upper || perp_delta < bb_lower {
                 // Get price and handle error
                 let price = api.request(
-                    GetFuture { future_name: String::from(&settings.market_name) }
+                    ftx::rest::GetFuture { future_name: String::from(&settings.market_name) }
                 ).await;
                 let btc_price = match price {
                     Err(e) => {
@@ -147,18 +159,18 @@ async fn main() {
                 };
 
                 let mut price: f64 = 0.0;
-                let mut position: String = "none".to_string();
+                let mut position: Position = Position::None;
 
                 if perp_delta > bb_upper {
                     // Enter long position
                     price = btc_price.ask.unwrap().to_f64().unwrap();
-                    position = String::from("long");
-                    warn!("Perp delta above upper bb, going {} at {:.2}", position, price);
+                    position = Position::Long;
+                    warn!("Perp delta above upper bb, going {:?} at {:.2}", position, price);
                 } else if perp_delta < bb_lower {
                     // Enter short position
                     price = btc_price.bid.unwrap().to_f64().unwrap();
-                    position = String::from("short");
-                    warn!("Perp delta below lower bb, going {} at {:.2}", position, price);
+                    position = Position::Short;
+                    warn!("Perp delta below lower bb, going {:?} at {:.2}", position, price);
                 }
 
                 // Write the positions to a csv
