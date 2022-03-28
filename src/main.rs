@@ -114,12 +114,18 @@ async fn main() {
                     // Enter long position
                     price = btc_price.ask.unwrap().to_f64().unwrap();
                     position = helpers::Position::Long;
-                    log::warn!("Perp delta above upper bb, going {:?} at {:.2}", position, price);
+                    log::warn!(
+                        "Perp delta above upper bb, going {:?} at {:.2}",
+                        position.to_string(), price)
+                    ;
                 } else if perp_delta < bb_lower {
                     // Enter short position
                     price = btc_price.bid.unwrap().to_f64().unwrap();
                     position = helpers::Position::Short;
-                    log::warn!("Perp delta below lower bb, going {:?} at {:.2}", position, price);
+                    log::warn!(
+                        "Perp delta below lower bb, going {:?} at {:.2}",
+                        position.to_string(), price
+                    );
                 }
 
                 // Write the positions to a csv
