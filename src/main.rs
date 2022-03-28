@@ -3,8 +3,9 @@ use std::{
     fs::{File, OpenOptions},
     io::BufReader,
     path::Path,
+    string::String,
     thread,
-    time::Duration,
+    time::Duration
 };
 
 use chrono::prelude::*;
@@ -31,7 +32,7 @@ struct SettingsFile {
     positions_filename: String,
 }
 
-fn write_to_csv(filename: &str, _price: String, _position: String) -> Result<(), Box<dyn Error>> {
+fn write_to_csv(filename: &str, price: &f64, position: &str) -> Result<(), Box<dyn Error>> {
     /* Write utc time, price and position to a csv file */
     let utc_time: DateTime<Utc> = Utc::now();
 
@@ -43,7 +44,7 @@ fn write_to_csv(filename: &str, _price: String, _position: String) -> Result<(),
         .unwrap();
     let mut wtr = Writer::from_writer(file);
     debug!("Writing position to {:?}", String::from(filename));
-    wtr.write_record(&[utc_time.to_string(), _price, _position])?;
+    wtr.write_record(&[utc_time.to_string(), price.to_string(), String::from(position)])?;
     wtr.flush()?;
     Ok(())
 }
@@ -95,16 +96,17 @@ async fn main() {
 
     loop {
         count += 1;
+
+        // Get orderbook and handle error
         let order_book = api.request(
             GetOrderBook {
                 market_name: String::from(&settings.market_name),
                 depth: Option::from(settings.orderbook_depth),
             }
         ).await;
-
-        // Continue loop is getting orderbook fails
         let order_book = match order_book {
             Err(e) => {
+                // Continue loop is getting orderbook fails
                 error!("Error: {:?}", e);
                 continue;
             }
@@ -125,11 +127,11 @@ async fn main() {
             }
 
             if perp_delta > bb_upper || perp_delta < bb_lower {
-                let btc_price = api.request(
+                // Get price and handle error
+                let price = api.request(
                     GetFuture { future_name: String::from(&settings.market_name) }
                 ).await;
-
-                let btc_price = match btc_price {
+                let btc_price = match price {
                     Err(e) => {
                         error!("Error: {:?}", e);
                         continue;
@@ -143,20 +145,20 @@ async fn main() {
                 if perp_delta > bb_upper {
                     // Enter long position
                     price = btc_price.ask.unwrap().to_f64().unwrap();
-                    position = "long".to_string();
+                    position = String::from("long");
                     warn!("Perp delta above upper bb, going {} at {:.2}", position, price);
                 } else if perp_delta < bb_lower {
                     // Enter short position
                     price = btc_price.bid.unwrap().to_f64().unwrap();
-                    position = "short".to_string();
+                    position = String::from("short");
                     warn!("Perp delta below lower bb, going {} at {:.2}", position, price);
                 }
 
                 // Write the positions to a csv
                 write_to_csv(
                     &settings.positions_filename,
-                    price.to_string(),
-                    position,
+                    &price,
+                    &position,
                 ).expect("Unable to write positions to file.");
             }
         }
