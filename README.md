@@ -25,3 +25,6 @@ We use the definitions :
 | `delta_perp` < `bb_lower` | long     |
 
 A full analysis of this strategy is detailed in [here](https://github.com/dineshpinto/market-analytics).
+
+## Disclaimer
+This project is ONLY for educational purposes. There is NO guarantee of the accuracy of the output data. Do not make any trading or investment decisions based on these results. Always do your own research.
