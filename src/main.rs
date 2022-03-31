@@ -1,12 +1,10 @@
-use rust_decimal::prelude::ToPrimitive;
-
 mod helpers;
 
+/// Sets up async function call to FTX
+/// Waits for bb_period time steps, then sets trigger
+/// Calculates delta at each timestep
 #[tokio::main]
 async fn main() {
-    /// Main logical loop, checks entry conditions
-    /// and enters trade if conditions are favorable
-
     // Load configuration file
     let settings_filepath = std::path::Path::new("settings.json");
     let settings_file = std::fs::File::open(settings_filepath)
@@ -37,7 +35,7 @@ async fn main() {
         log::warn!("The bot is running live")
     }
     log::info!("Setting trigger in {:?} iterations (approx {:?}s)...",
-        settings.bb_period, settings.bb_period * settings.time_delta.to_usize().unwrap());
+        settings.bb_period, settings.bb_period * rust_decimal::prelude::ToPrimitive::to_usize(&settings.time_delta).unwrap());
 
     // Set up connection to FTX API
     let api = if settings.live {
@@ -54,7 +52,7 @@ async fn main() {
     // Set up bollinger bands
     let mut bb = ta::indicators::BollingerBands::new(
         settings.bb_period,
-        settings.bb_std_dev
+        settings.bb_std_dev,
     ).unwrap();
 
     let mut count: usize = 0;
@@ -79,7 +77,8 @@ async fn main() {
         };
 
         // Calculate values used for analysis
-        let perp_delta = (order_book.bids[0].1 - order_book.asks[0].1).to_f64().unwrap();
+        let perp_delta = rust_decimal::prelude::ToPrimitive::to_f64(
+            &(order_book.bids[0].1 - order_book.asks[0].1)).unwrap();
         let out = ta::Next::next(&mut bb, perp_delta);
         let bb_lower = out.lower;
         let bb_upper = out.upper;
@@ -112,15 +111,15 @@ async fn main() {
 
                 if perp_delta > bb_upper {
                     // Enter long position
-                    price = btc_price.ask.unwrap().to_f64().unwrap();
+                    price = rust_decimal::prelude::ToPrimitive::to_f64(&btc_price.ask.unwrap()).unwrap();
                     position = helpers::Position::Long;
                     log::warn!(
                         "Perp delta above upper bb, going {:?} at {:.2}",
-                        position.to_string(), price)
-                    ;
+                        position.to_string(), price
+                    );
                 } else if perp_delta < bb_lower {
                     // Enter short position
-                    price = btc_price.bid.unwrap().to_f64().unwrap();
+                    price = rust_decimal::prelude::ToPrimitive::to_f64(&btc_price.bid.unwrap()).unwrap();
                     position = helpers::Position::Short;
                     log::warn!(
                         "Perp delta below lower bb, going {:?} at {:.2}",

@@ -1,6 +1,6 @@
+/// Format to follow for settings file
 #[derive(serde::Serialize, serde::Deserialize)]
 pub(crate) struct SettingsFile {
-    /// Format to follow for settings file
     pub(crate) market_name: String,
     pub(crate) time_delta: u64,
     pub(crate) bb_period: usize,
@@ -10,9 +10,9 @@ pub(crate) struct SettingsFile {
     pub(crate) positions_filename: String,
 }
 
+/// enum to store current position in market
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Position {
-    /// enum to store current position in market
     Long,
     Short,
     None,
@@ -28,9 +28,9 @@ impl std::fmt::Display for Position {
     }
 }
 
+/// Write utc time, price and position to a csv file
 pub(crate) fn write_to_csv(filename: &str, price: &f64, position: &Position)
                            -> Result<(), Box<dyn std::error::Error>> {
-    /// Write utc time, price and position to a csv file
     let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 
     let file = std::fs::OpenOptions::new()
