@@ -1,4 +1,5 @@
 mod helpers;
+mod order_handler;
 
 /// Sets up async function call to FTX
 /// Waits for bb_period time steps, then sets trigger
@@ -21,17 +22,7 @@ async fn main() {
         .init();
 
     log::info!("Settings file loaded from {:?}.", settings_filepath);
-    log::info!(
-        "market_name={:?}, time_delta={:?}, bb_period={:?}, bb_std_dev={:?}, orderbook_depth={:?}, \
-        positions_filename={:?}",
-        String::from(&settings.market_name),
-        settings.time_delta,
-        settings.bb_period,
-        settings.bb_std_dev,
-        settings.orderbook_depth,
-        settings.positions_filename
-    );
-
+    log::info!("{:?}", settings);
     log::info!("Setting trigger in {:?} iterations (approx {:?}s)...",
         settings.bb_period,
         settings.bb_period * rust_decimal::prelude::ToPrimitive::to_usize(
@@ -40,11 +31,11 @@ async fn main() {
 
     // Set up connection to FTX API
     let api = if settings.live {
-        log::warn!("The bot is running live");
+        log::info!("The bot is running live");
         dotenv::dotenv().ok();
         ftx::rest::Rest::new(ftx::options::Options::from_env())
     } else {
-        log::warn!("The bot is not running live, no orders will be placed");
+        log::info!("The bot is not running live, no orders will be placed");
         ftx::rest::Rest::new(
             ftx::options::Options {
                 endpoint: ftx::options::Endpoint::Com,
@@ -95,7 +86,7 @@ async fn main() {
 
         if count > settings.bb_period {
             if count == settings.bb_period + 1 {
-                log::warn!("Trigger is now set...")
+                log::info!("Trigger is now set...")
             }
 
             if perp_delta > bb_upper || perp_delta < bb_lower {
@@ -123,7 +114,7 @@ async fn main() {
                     // Continue if we are already on the same side
                     if side == current_side { continue; } else { current_side = side }
 
-                    log::warn!(
+                    log::info!(
                         "Perp delta above upper bb, going {:?} at {:.2}",
                         side.to_string(), price
                     );
@@ -134,41 +125,67 @@ async fn main() {
                     // Continue if we are already on the same side
                     if side == current_side { continue; } else { current_side = side }
 
-                    log::warn!(
+                    log::info!(
                         "Perp delta below lower bb, going {:?} at {:.2}",
                         side.to_string(), price
                     );
                 }
 
                 if settings.live {
-                    let _side = if side == helpers::Side::Buy {
+                    // Map our Side enum to FTX's Side enum
+                    let order_side: ftx::rest::Side = if current_side == helpers::Side::Buy {
                         ftx::rest::Side::Buy
-                    } else if side == helpers::Side::Sell {
+                    } else if current_side == helpers::Side::Sell {
                         ftx::rest::Side::Sell
                     } else {
                         continue;
                     };
 
-                    let order_placed = api.request(ftx::rest::PlaceOrder {
-                        market: String::from(&settings.market_name),
-                        side: _side,
-                        price: None,
-                        r#type: Default::default(),
-                        size: Default::default(),
-                        reduce_only: true,
-                        ioc: false,
-                        post_only: false,
-                        client_id: None,
-                        reject_on_price_band: false,
-                    }).await;
-
+                    // TODO: Use Kelly criterion for order sizing
+                    let order_placed = futures::executor::block_on(
+                        order_handler::place_market_order(
+                            &api,
+                            &settings.market_name,
+                            order_side,
+                            settings.order_size,
+                        )
+                    );
                     match order_placed {
                         Err(e) => {
                             log::error!("Unable to place order, Err: {:?}", e);
                             continue;
                         }
                         Ok(o) => {
-                            log::warn!("Order placed successfully: {:?}", o);
+                            log::info!("Order placed successfully: {:?}", o);
+                        }
+                    }
+
+                    // Calculate static TP and SL for order
+                    // TODO: Use dynamic TP and SL based on market movements
+                    let (tp_price, sl_price) = order_handler::calculate_tp_and_sl(
+                        price, order_side, settings.tp_percent, settings.sl_percent);
+                    let triggers_placed = futures::executor::block_on(
+                        order_handler::place_trigger_orders(
+                            &api,
+                            &settings.market_name,
+                            order_side,
+                            settings.order_size,
+                            tp_price,
+                            sl_price,
+                        ));
+
+                    // If unable to place TP or SL, cancel all orders
+                    // TODO: Market close position in event of failure
+                    if !triggers_placed {
+                        log::warn!("Cancelling all orders...");
+                        let cancel_orders = futures::executor::block_on(
+                            order_handler::cancel_all_orders(&api, &settings.market_name));
+                        match cancel_orders {
+                            Ok(_o) => continue,
+                            Err(e) => {
+                                log::error!("Unable to cancel orders Err: {:?}, panic", e);
+                                panic!()
+                            }
                         }
                     }
                 }

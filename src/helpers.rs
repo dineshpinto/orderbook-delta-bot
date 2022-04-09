@@ -1,5 +1,7 @@
+use rust_decimal::Decimal;
+
 /// Format to follow for settings file
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub(crate) struct SettingsFile {
     pub(crate) market_name: String,
     pub(crate) time_delta: u64,
@@ -7,6 +9,9 @@ pub(crate) struct SettingsFile {
     pub(crate) bb_std_dev: f64,
     pub(crate) orderbook_depth: u32,
     pub(crate) live: bool,
+    pub(crate) order_size: Decimal,
+    pub(crate) tp_percent: f64,
+    pub(crate) sl_percent: f64,
     pub(crate) positions_filename: String,
 }
 

@@ -5,5 +5,8 @@
   "bb_std_dev": 2.0,
   "orderbook_depth": 1,
   "live": false,
+  "order_size": 1.0,
+  "tp_percent": 1.0,
+  "sl_percent": 0.5,
   "positions_filename": "positions.csv"
 }

@@ -791,6 +791,7 @@ dependencies = [
  "dotenv",
  "env_logger",
  "ftx",
+ "futures",
  "log",
  "rust_decimal",
  "serde",
