@@ -1,5 +1,3 @@
-use rust_decimal::Decimal;
-
 /// Format to follow for settings file
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub(crate) struct SettingsFile {
@@ -67,8 +65,8 @@ pub fn convert_increment_to_precision(increment: rust_decimal::Decimal) -> u32 {
     let mut precision = 0;
     let mut incr = increment;
 
-    while incr != Decimal::from(1) {
-        incr *= Decimal::from(10);
+    while incr != rust_decimal::Decimal::from(1) {
+        incr *= rust_decimal::Decimal::from(10);
         precision += 1;
     }
     return precision
