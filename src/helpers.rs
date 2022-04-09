@@ -9,11 +9,12 @@ pub(crate) struct SettingsFile {
     pub(crate) bb_std_dev: f64,
     pub(crate) orderbook_depth: u32,
     pub(crate) live: bool,
-    pub(crate) order_size: Decimal,
-    pub(crate) tp_percent: f64,
-    pub(crate) sl_percent: f64,
+    pub(crate) order_size: rust_decimal::Decimal,
+    pub(crate) tp_percent: rust_decimal::Decimal,
+    pub(crate) sl_percent: rust_decimal::Decimal,
     pub(crate) positions_filename: String,
 }
+
 
 /// enum to store current position in market
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -33,15 +34,15 @@ impl std::fmt::Display for Side {
     }
 }
 
-
 impl Default for Side {
     fn default() -> Side {
         Side::None
     }
 }
 
+
 /// Write utc time, price and position to a csv file
-pub(crate) fn write_to_csv(filename: &str, price: &f64, position: &Side)
+pub(crate) fn write_to_csv(filename: &str, price: f64, position: &Side)
                            -> Result<(), Box<dyn std::error::Error>> {
     let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 
@@ -56,4 +57,19 @@ pub(crate) fn write_to_csv(filename: &str, price: &f64, position: &Side)
     wtr.write_record(&[utc_time.to_string(), price.to_string(), position.to_string()])?;
     wtr.flush()?;
     Ok(())
+}
+
+
+/// Convert an increment to a precision
+/// eg. increment=0.0001 has precision=4,
+/// or increment=1 has precision=0
+pub fn convert_increment_to_precision(increment: rust_decimal::Decimal) -> u32 {
+    let mut precision = 0;
+    let mut incr = increment;
+
+    while incr != Decimal::from(1) {
+        incr *= Decimal::from(10);
+        precision += 1;
+    }
+    return precision
 }

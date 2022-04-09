@@ -18,6 +18,7 @@ pub async fn place_market_order(
     }).await;
 }
 
+
 /// Cancel all open orders and trigger orders on FTX
 pub async fn cancel_all_orders(api: &ftx::rest::Rest, market_name: &str) -> ftx::rest::Result<String> {
     return api.request(ftx::rest::CancelAllOrder {
@@ -34,8 +35,8 @@ pub async fn place_trigger_orders(
     market_name: &str,
     order_side: ftx::rest::Side,
     order_size: rust_decimal::Decimal,
-    tp_price: f64,
-    sl_price: f64) -> bool {
+    tp_price: rust_decimal::Decimal,
+    sl_price: rust_decimal::Decimal) -> bool {
     let trigger_side = match order_side {
         ftx::rest::Side::Buy => ftx::rest::Side::Sell,
         ftx::rest::Side::Sell => ftx::rest::Side::Buy,
@@ -46,7 +47,7 @@ pub async fn place_trigger_orders(
         side: trigger_side,
         size: order_size,
         r#type: Default::default(),
-        trigger_price: rust_decimal::prelude::FromPrimitive::from_f64(tp_price).unwrap(),
+        trigger_price: tp_price,
         reduce_only: Option::from(true),
         retry_until_filled: None,
         order_price: None,
@@ -58,7 +59,7 @@ pub async fn place_trigger_orders(
         side: trigger_side,
         size: order_size,
         r#type: Default::default(),
-        trigger_price: rust_decimal::prelude::FromPrimitive::from_f64(sl_price).unwrap(),
+        trigger_price: sl_price,
         reduce_only: Option::from(true),
         retry_until_filled: None,
         order_price: None,
@@ -90,19 +91,24 @@ pub async fn place_trigger_orders(
     return take_profit_success && stop_loss_success;
 }
 
+
 /// Calculate static TP and SL values
 pub fn calculate_tp_and_sl(
-    price: f64,
+    price: rust_decimal::Decimal,
     side: ftx::rest::Side,
-    tp_percent: f64,
-    sl_percent: f64) -> (f64, f64) {
+    tp_percent: rust_decimal::Decimal,
+    sl_percent: rust_decimal::Decimal,
+    price_precision: u32) -> (rust_decimal::Decimal, rust_decimal::Decimal) {
+
+    let div = rust_decimal::Decimal::from(100);
+
     let (tp_price, sl_price) = match side {
         ftx::rest::Side::Buy => {
-            (price + price * tp_percent / 100.0, price - price * sl_percent / 100.0)
+            (price + price * tp_percent / div, price - price * sl_percent / div)
         }
         ftx::rest::Side::Sell => {
-            (price - price * tp_percent / 100.0, price + price * sl_percent / 100.0)
+            (price - price * tp_percent / div, price + price * sl_percent / div)
         }
     };
-    return (tp_price, sl_price);
+    return (tp_price.round_dp(price_precision), sl_price.round_dp(price_precision));
 }
