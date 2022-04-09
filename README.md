@@ -27,30 +27,42 @@ We use the definitions :
 | `delta_perp` > `bb_upper` | short    |
 | `delta_perp` < `bb_lower` | long     |
 
-A full analysis of this strategy is detailed in [here](https://github.com/dineshpinto/market-analytics).
+A full analysis of this strategy is detailed [here](https://github.com/dineshpinto/market-analytics).
 
 ## Installation
-1. Install all dependencies 
-```rust
+### Clone the repository
+#### With Git
+```shell
+git clone https://github.com/dineshpinto/orderbook-delta-bot.git
+```
+
+#### With GitHub CLI
+```shell
+gh repo clone dineshpinto/orderbook-delta-bot
+```
+
+### Install all dependencies and build
+```shell
 cargo build
 ```
-2. Run script
-```rust
+
+### Run script
+```shell
 cargo run
 ```
 
-## Options
+## Settings
 `settings.json` contains all the configurable options:
 
-| Option               | Explanation                                                            |
-|----------------------|------------------------------------------------------------------------|
-| `market_name`        | Name of futures market on FTX (default: BTC-PERP)                      |
-| `time_delta`         | Delay in seconds between queries (default: 5)                          |
-| `bb_period`          | Bollinger band period (default: 20)                                    |
-| `bb_std_dev`         | Bollinger band standard deviation (default: 2)                         |
-| `orderbook_depth`    | Depth of orderbook to query (default: 1)                               |
-| `live`               | Place live orders on FTX, requires API keys in `.env` (default: false) |
-| `positions_filename` | Store positions in a csv file for further analysis                     |
+| Name                 | Explanation                                                                 |
+|----------------------|-----------------------------------------------------------------------------|
+| `market_name`        | Name of futures market on FTX (default: BTC-PERP)                           |
+| `time_delta`         | Delay in seconds between queries (default: 5)                               |
+| `bb_period`          | Bollinger band period (default: 20)                                         |
+| `bb_std_dev`         | Bollinger band standard deviation (default: 2)                              |
+| `orderbook_depth`    | Depth of orderbook to query (default: 1)                                    |
+| `live`               | Place live orders on FTX, requires API keys in `.env` (default: false)      |
+| `positions_filename` | Store positions in a csv file for further analysis (default: positions.csv) |
 
 ## Disclaimer
 This project is only for educational purposes. There is no guarantee of the accuracy of the output data. Do not make 
