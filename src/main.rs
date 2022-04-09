@@ -158,7 +158,7 @@ async fn main() {
                 let (tp_price, sl_price) = order_handler::calculate_tp_and_sl(
                     price, order_side, settings.tp_percent, settings.sl_percent, price_precision);
                 log::info!(
-                    "{:?} {:?} {:?} at {:?}. Take profit at {:?} ({:?}%) and stop loss at {:?} ({:?}%)",
+                    "{:?} {:?} {} at {:?}. Take profit at {:?} ({:?}%) and stop loss at {:?} ({:?}%)",
                     current_side, order_size, settings.market_name, price, tp_price,
                     settings.tp_percent, sl_price, settings.sl_percent
                 );
