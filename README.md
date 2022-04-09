@@ -14,7 +14,7 @@ We are testing this with BTC-PERP on FTX, which has good liquidity and small spr
 In principle, the scheme could be modified for lower liquidity pairs too, perhaps by adjusting the bollinger band width 
 and length for generating triggers.
 
-We use the definitions : 
+We use the definitions: 
 
 | Name         | Definition                                                     |
 |--------------|----------------------------------------------------------------|

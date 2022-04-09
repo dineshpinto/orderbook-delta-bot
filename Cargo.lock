@@ -788,6 +788,7 @@ version = "0.2.0"
 dependencies = [
  "chrono",
  "csv",
+ "dotenv",
  "env_logger",
  "ftx",
  "log",

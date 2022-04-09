@@ -15,7 +15,7 @@ pub(crate) struct SettingsFile {
 pub(crate) enum Side {
     Buy,
     Sell,
-    None
+    None,
 }
 
 impl std::fmt::Display for Side {

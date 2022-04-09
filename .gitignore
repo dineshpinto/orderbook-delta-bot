@@ -9,7 +9,11 @@ target/
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
+# C-Lion
+.idea/
+
+# VS code
+.DS_Store
+
 # Additional files
 *.csv
-.DS_Store
-.idea/

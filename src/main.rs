@@ -41,6 +41,7 @@ async fn main() {
     // Set up connection to FTX API
     let api = if settings.live {
         log::warn!("The bot is running live");
+        dotenv::dotenv().ok();
         ftx::rest::Rest::new(ftx::options::Options::from_env())
     } else {
         log::warn!("The bot is not running live, no orders will be placed");
@@ -63,6 +64,8 @@ async fn main() {
 
     loop {
         count += 1;
+        // Sleep before loop logic to handle continue
+        std::thread::sleep(std::time::Duration::from_secs(settings.time_delta));
 
         // Get orderbook and handle error
         let order_book = api.request(
@@ -118,7 +121,7 @@ async fn main() {
                     price = rust_decimal::prelude::ToPrimitive::to_f64(&btc_price.ask.unwrap()).unwrap();
                     side = helpers::Side::Buy;
                     // Continue if we are already on the same side
-                    if side == current_side { continue } else { current_side = side }
+                    if side == current_side { continue; } else { current_side = side }
 
                     log::warn!(
                         "Perp delta above upper bb, going {:?} at {:.2}",
@@ -129,7 +132,7 @@ async fn main() {
                     price = rust_decimal::prelude::ToPrimitive::to_f64(&btc_price.bid.unwrap()).unwrap();
                     side = helpers::Side::Sell;
                     // Continue if we are already on the same side
-                    if side == current_side { continue } else { current_side = side }
+                    if side == current_side { continue; } else { current_side = side }
 
                     log::warn!(
                         "Perp delta below lower bb, going {:?} at {:.2}",
@@ -143,7 +146,7 @@ async fn main() {
                     } else if side == helpers::Side::Sell {
                         ftx::rest::Side::Sell
                     } else {
-                        continue
+                        continue;
                     };
 
                     let order_placed = api.request(ftx::rest::PlaceOrder {
@@ -156,19 +159,18 @@ async fn main() {
                         ioc: false,
                         post_only: false,
                         client_id: None,
-                        reject_on_price_band: false
+                        reject_on_price_band: false,
                     }).await;
 
-                    match order_placed { 
+                    match order_placed {
                         Err(e) => {
                             log::error!("Unable to place order, Err: {:?}", e);
-                            continue
+                            continue;
                         }
                         Ok(o) => {
                             log::warn!("Order placed successfully: {:?}", o);
                         }
                     }
-                    
                 }
 
                 // Write the positions to a csv
@@ -179,6 +181,5 @@ async fn main() {
                 ).expect("Unable to write positions to file.");
             }
         }
-        std::thread::sleep(std::time::Duration::from_secs(settings.time_delta));
     }
 }
