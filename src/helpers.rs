@@ -11,25 +11,32 @@ pub(crate) struct SettingsFile {
 }
 
 /// enum to store current position in market
-#[derive(Debug, Clone, Copy)]
-pub(crate) enum Position {
-    Long,
-    Short,
-    None,
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) enum Side {
+    Buy,
+    Sell,
+    None
 }
 
-impl std::fmt::Display for Position {
+impl std::fmt::Display for Side {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Position::Long => write!(f, "long"),
-            Position::Short => write!(f, "short"),
-            Position::None => write!(f, "none"),
+            Side::Buy => write!(f, "long"),
+            Side::Sell => write!(f, "short"),
+            Side::None => write!(f, "none"),
         }
     }
 }
 
+
+impl Default for Side {
+    fn default() -> Side {
+        Side::None
+    }
+}
+
 /// Write utc time, price and position to a csv file
-pub(crate) fn write_to_csv(filename: &str, price: &f64, position: &Position)
+pub(crate) fn write_to_csv(filename: &str, price: &f64, position: &Side)
                            -> Result<(), Box<dyn std::error::Error>> {
     let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 

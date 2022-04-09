@@ -31,16 +31,19 @@ async fn main() {
         settings.orderbook_depth,
         settings.positions_filename
     );
-    if settings.live {
-        log::warn!("The bot is running live")
-    }
+
     log::info!("Setting trigger in {:?} iterations (approx {:?}s)...",
-        settings.bb_period, settings.bb_period * rust_decimal::prelude::ToPrimitive::to_usize(&settings.time_delta).unwrap());
+        settings.bb_period,
+        settings.bb_period * rust_decimal::prelude::ToPrimitive::to_usize(
+            &settings.time_delta).unwrap()
+    );
 
     // Set up connection to FTX API
     let api = if settings.live {
+        log::warn!("The bot is running live");
         ftx::rest::Rest::new(ftx::options::Options::from_env())
     } else {
+        log::warn!("The bot is not running live, no orders will be placed");
         ftx::rest::Rest::new(
             ftx::options::Options {
                 endpoint: ftx::options::Endpoint::Com,
@@ -56,6 +59,7 @@ async fn main() {
     ).unwrap();
 
     let mut count: usize = 0;
+    let mut current_side: helpers::Side = helpers::Side::default();
 
     loop {
         count += 1;
@@ -100,38 +104,78 @@ async fn main() {
                 ).await;
                 let btc_price = match price {
                     Err(e) => {
-                        log::error!("Error: {:?}", e);
+                        log::error!("Error getting price: {:?}", e);
                         continue;
                     }
                     Ok(o) => o
                 };
 
                 let mut price: f64 = 0.0;
-                let mut position: helpers::Position = helpers::Position::None;
+                let mut side: helpers::Side = helpers::Side::Buy;
 
                 if perp_delta > bb_upper {
                     // Enter long position
                     price = rust_decimal::prelude::ToPrimitive::to_f64(&btc_price.ask.unwrap()).unwrap();
-                    position = helpers::Position::Long;
+                    side = helpers::Side::Buy;
+                    // Continue if we are already on the same side
+                    if side == current_side { continue } else { current_side = side }
+
                     log::warn!(
                         "Perp delta above upper bb, going {:?} at {:.2}",
-                        position.to_string(), price
+                        side.to_string(), price
                     );
                 } else if perp_delta < bb_lower {
                     // Enter short position
                     price = rust_decimal::prelude::ToPrimitive::to_f64(&btc_price.bid.unwrap()).unwrap();
-                    position = helpers::Position::Short;
+                    side = helpers::Side::Sell;
+                    // Continue if we are already on the same side
+                    if side == current_side { continue } else { current_side = side }
+
                     log::warn!(
                         "Perp delta below lower bb, going {:?} at {:.2}",
-                        position.to_string(), price
+                        side.to_string(), price
                     );
+                }
+
+                if settings.live {
+                    let _side = if side == helpers::Side::Buy {
+                        ftx::rest::Side::Buy
+                    } else if side == helpers::Side::Sell {
+                        ftx::rest::Side::Sell
+                    } else {
+                        continue
+                    };
+
+                    let order_placed = api.request(ftx::rest::PlaceOrder {
+                        market: String::from(&settings.market_name),
+                        side: _side,
+                        price: None,
+                        r#type: Default::default(),
+                        size: Default::default(),
+                        reduce_only: true,
+                        ioc: false,
+                        post_only: false,
+                        client_id: None,
+                        reject_on_price_band: false
+                    }).await;
+
+                    match order_placed { 
+                        Err(e) => {
+                            log::error!("Unable to place order, Err: {:?}", e);
+                            continue
+                        }
+                        Ok(o) => {
+                            log::warn!("Order placed successfully: {:?}", o);
+                        }
+                    }
+                    
                 }
 
                 // Write the positions to a csv
                 helpers::write_to_csv(
                     &settings.positions_filename,
                     &price,
-                    &position,
+                    &side,
                 ).expect("Unable to write positions to file.");
             }
         }
