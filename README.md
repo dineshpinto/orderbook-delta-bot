@@ -62,7 +62,7 @@ cargo run
 | `bb_std_dev`      | Bollinger band standard deviation (default: 2)                              |
 | `orderbook_depth` | Depth of orderbook to query (default: 1)                                    |
 | `live`            | Place live orders on FTX, requires API keys in `.env` (default: false)      |
-| `order_size`      | Size of order to place (default: 1.168 BTC)                                 |
+| `order_size`      | Size of order to place (default: 1.618 BTC)                                 |
 | `tp_percent`      | Percent move to take profit at (default: 0.1%)                              |
 | `sl_percent`      | Percent move to stop loss at (default: 0.05%)                               |
 | `write_to_file`   | Store positions in a csv file for further analysis (default: positions.csv) |
