@@ -67,6 +67,12 @@ cargo run
 | `sl_percent`      | Percent move to stop loss at (default: 0.05%)                               |
 | `write_to_file`   | Store positions in a csv file for further analysis (default: positions.csv) |
 
+## TODO
+- [ ] Use Kelly criterion for order sizing
+- [ ] Use dynamic take profit and stop loss based on predictive analysis
+- [ ] Perform spectral analysis with wider timeframes to identify optimal 
+market conditions
+
 ## Disclaimer
 This project is only for educational purposes. There is no guarantee of the accuracy of the output data. Do not make 
 any trading or investment decisions based on these results. Always do your own research.
