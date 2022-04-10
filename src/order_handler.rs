@@ -1,5 +1,9 @@
+//! A set of functions to handle placing market or limit orders,
+//! trigger orders and canceling orders
+
+
 /// Create a market order on FTX
-pub async fn place_market_order(
+pub(crate) async fn place_market_order(
     api: &ftx::rest::Rest,
     market_name: &str,
     order_side: ftx::rest::Side,
@@ -20,7 +24,7 @@ pub async fn place_market_order(
 
 
 /// Cancel all open orders and trigger orders on FTX
-pub async fn cancel_all_orders(api: &ftx::rest::Rest, market_name: &str) -> ftx::rest::Result<String> {
+pub(crate) async fn cancel_all_orders(api: &ftx::rest::Rest, market_name: &str) -> ftx::rest::Result<String> {
     return api.request(ftx::rest::CancelAllOrder {
         market: Option::from(String::from(market_name)),
         side: None,
@@ -30,7 +34,7 @@ pub async fn cancel_all_orders(api: &ftx::rest::Rest, market_name: &str) -> ftx:
 }
 
 /// Place take profit and stop loss orders
-pub async fn place_trigger_orders(
+pub(crate) async fn place_trigger_orders(
     api: &ftx::rest::Rest,
     market_name: &str,
     order_side: ftx::rest::Side,
@@ -93,7 +97,7 @@ pub async fn place_trigger_orders(
 
 
 /// Calculate static TP and SL values
-pub fn calculate_tp_and_sl(
+pub(crate) fn calculate_tp_and_sl(
     price: rust_decimal::Decimal,
     side: ftx::rest::Side,
     tp_percent: rust_decimal::Decimal,

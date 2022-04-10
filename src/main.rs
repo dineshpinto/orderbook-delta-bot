@@ -1,19 +1,35 @@
+//! A trading bot written in Rust.
+//!
+//! Dinesh Pinto, 2022.
+//!
+//! Uses a trading strategy based on counter trading large deviations in
+//! the delta volume (i.e. bid volume - ask volume) on the futures orderbook.
+//!
+//! The bot waits for deviations outside a specified standard deviation of a bollinger band
+//! and enters a long/short position accordingly.
+//!
+//! A full analysis of this strategy is given in
+//! [dineshpinto/market-analytics](https://github.com/dineshpinto/market-analytics)
+
 mod helpers;
 mod order_handler;
 
-/// Sets up async function call to FTX
-/// Waits for bb_period time steps, then sets trigger
-/// Calculates delta at each timestep
+/// Core logical loop for the bot.
+///
+/// The process is:
+/// 1. Set up asynchronous connection to the FTX API
+/// 1. Wait for N time steps, where N is the length of the bollinger band.
+/// 2. Set the trigger to ready the bot
+/// 3. Enter a long/short position, with a take profit and stop loss if needed
+/// 4. Monitor position and change sides if needed
+///
 #[tokio::main]
 async fn main() {
-    // Load configuration file
-    let settings_filepath = std::path::Path::new("settings.json");
-    let settings_file = std::fs::File::open(settings_filepath)
-        .expect("Config file not found");
-    let reader = std::io::BufReader::new(settings_file);
-    let settings: helpers::SettingsFile =
-        serde_json::from_reader(reader).expect("Error when reading config json");
+    // Load settings file
+    let settings_filepath = String::from("settings.json");
+    let settings = helpers::read_settings(&settings_filepath);
 
+    // Set up logging
     let mut builder = env_logger::Builder::new();
     builder
         .filter(None, log::LevelFilter::Info)
@@ -30,10 +46,12 @@ async fn main() {
 
     // Set up connection to FTX API
     let api = if settings.live {
+        // Read .env file for API keys if bot is live
         log::info!("The bot is running live");
         dotenv::dotenv().ok();
         ftx::rest::Rest::new(ftx::options::Options::from_env())
     } else {
+        // Use public endpoint if bot is not live
         log::info!("The bot is not running live, no orders will be placed");
         ftx::rest::Rest::new(
             ftx::options::Options {
@@ -49,27 +67,28 @@ async fn main() {
         settings.bb_std_dev,
     ).unwrap();
 
-    let mut count: usize = 0;
-    let mut current_side: helpers::Side = helpers::Side::default();
-
+    // Get precision for price and size for current market,
+    // use MidpointNearestEven rounding (Banker's rounding)
     let price_result = api.request(
         ftx::rest::GetFuture {
             future_name: String::from(&settings.market_name)
         }
     ).await.unwrap();
-
     let price_precision = helpers::convert_increment_to_precision(price_result.price_increment);
     let size_precision = helpers::convert_increment_to_precision(price_result.size_increment);
-
-    // Use MidpointNearestEven rounding (Banker's rounding)
     let order_size = settings.order_size.round_dp(size_precision);
+
+    // Set up loop outer variables
+    let mut count: usize = 0;
+    let mut current_side: helpers::Side = helpers::Side::default();
+    let mut price = rust_decimal::Decimal::default();
 
     loop {
         count += 1;
-        // Sleep before loop logic to handle continue
+        // Sleep before loop logic to handle continue statements
         std::thread::sleep(std::time::Duration::from_secs(settings.time_delta));
 
-        // Get orderbook and handle error
+        // Get orderbook
         let order_book = api.request(
             ftx::rest::GetOrderBook {
                 market_name: String::from(&settings.market_name),
@@ -95,13 +114,15 @@ async fn main() {
         log::debug!("perp_delta={:.2}, bb_lower={:.2}, bb_upper={:.2}",
             perp_delta, bb_lower, bb_upper);
 
+        // Only perform further calculation if bb_period is passed
         if count > settings.bb_period {
             if count == settings.bb_period + 1 {
                 log::info!("Trigger is now set...")
             }
 
+            // Entry conditions
             if perp_delta > bb_upper || perp_delta < bb_lower {
-                // Get price and handle error
+                // Get current price
                 let price_result = api.request(
                     ftx::rest::GetFuture {
                         future_name: String::from(&settings.market_name)
@@ -117,34 +138,34 @@ async fn main() {
                     },
                 };
 
-                let mut side: helpers::Side = helpers::Side::Buy;
-                let mut price = rust_decimal::Decimal::default();
+                // Create local variables to handle side
+                let mut _side: helpers::Side = helpers::Side::Buy;
 
                 if perp_delta > bb_upper {
                     // Enter long position
-                    side = helpers::Side::Buy;
+                    _side = helpers::Side::Buy;
                     price = ask_price;
-                    // Continue if we are already on the same side
-                    if side == current_side { continue; } else { current_side = side }
+                    // Continue if we are already on the same side, else change side
+                    if _side == current_side { continue; } else { current_side = _side }
 
                     log::info!(
                         "Perp delta above upper bb, {:?} at {:?}",
-                        side, price
+                        _side, price
                     );
                 } else if perp_delta < bb_lower {
                     // Enter short position
-                    side = helpers::Side::Sell;
+                    _side = helpers::Side::Sell;
                     price = bid_price;
-                    // Continue if we are already on the same side
-                    if side == current_side { continue; } else { current_side = side }
+                    // Continue if we are already on the same side, else change side
+                    if _side == current_side { continue; } else { current_side = _side }
 
                     log::info!(
                         "Perp delta below lower bb, {:?} at {:?}",
-                        side, price
+                        _side, price
                     );
                 }
 
-                // Map our Side enum to FTX's Side enum
+                // Map our Side enum onto FTX Side enum
                 let order_side: ftx::rest::Side = if current_side == helpers::Side::Buy {
                     ftx::rest::Side::Buy
                 } else if current_side == helpers::Side::Sell {
@@ -204,7 +225,7 @@ async fn main() {
                         match cancel_orders {
                             Ok(_o) => continue,
                             Err(e) => {
-                                log::error!("Unable to cancel orders Err: {:?}, panic", e);
+                                log::error!("Unable to cancel orders Err: {:?}, panicking!", e);
                                 panic!()
                             }
                         }
@@ -214,8 +235,9 @@ async fn main() {
                 // Write the positions to a csv
                 helpers::write_to_csv(
                     &settings.positions_filename,
-                    rust_decimal::prelude::ToPrimitive::to_f64(&price).unwrap(),
-                    &side,
+                    price,
+                    order_size,
+                    &current_side,
                 ).expect("Unable to write positions to file.");
             }
         }

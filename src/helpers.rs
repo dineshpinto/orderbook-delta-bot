@@ -1,15 +1,27 @@
-/// Format to follow for settings file
+//! A set of functions to handle config files, saving data and additional math
+
+/// Format to follow for settings JSON file
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub(crate) struct SettingsFile {
+    /// Name of futures market on FTX
     pub(crate) market_name: String,
+    /// Time delay (in seconds) between queries
     pub(crate) time_delta: u64,
+    /// Period of bollinger band
     pub(crate) bb_period: usize,
+    /// Standard deviation of bollinger band
     pub(crate) bb_std_dev: f64,
+    /// Depth of orderbook
     pub(crate) orderbook_depth: u32,
+    /// Make live trades or not
     pub(crate) live: bool,
+    /// Size of position to take
     pub(crate) order_size: rust_decimal::Decimal,
+    /// Percent to take profit at
     pub(crate) tp_percent: rust_decimal::Decimal,
+    /// Percent to stop loss at
     pub(crate) sl_percent: rust_decimal::Decimal,
+    /// Filename to store positions
     pub(crate) positions_filename: String,
 }
 
@@ -39,9 +51,12 @@ impl Default for Side {
 }
 
 
-/// Write utc time, price and position to a csv file
-pub(crate) fn write_to_csv(filename: &str, price: f64, position: &Side)
-                           -> Result<(), Box<dyn std::error::Error>> {
+/// Write utc time, price and current position to a csv file
+pub(crate) fn write_to_csv(
+    filename: &str,
+    price: rust_decimal::Decimal,
+    size: rust_decimal::Decimal,
+    position: &Side) -> Result<(), Box<dyn std::error::Error>> {
     let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 
     let file = std::fs::OpenOptions::new()
@@ -52,16 +67,18 @@ pub(crate) fn write_to_csv(filename: &str, price: f64, position: &Side)
         .unwrap();
     let mut wtr = csv::Writer::from_writer(file);
     log::debug!("Writing position to {:?}", String::from(filename));
-    wtr.write_record(&[utc_time.to_string(), price.to_string(), position.to_string()])?;
+    wtr.write_record(&[utc_time.to_string(), price.to_string(), size.to_string(), position.to_string()])?;
     wtr.flush()?;
     Ok(())
 }
 
 
 /// Convert an increment to a precision
-/// eg. increment=0.0001 has precision=4,
-/// or increment=1 has precision=0
-pub fn convert_increment_to_precision(increment: rust_decimal::Decimal) -> u32 {
+///
+/// eg.
+///     increment=0.0001 has precision=4 and
+///     increment=1 has precision=0
+pub(crate) fn convert_increment_to_precision(increment: rust_decimal::Decimal) -> u32 {
     let mut precision = 0;
     let mut incr = increment;
 
@@ -70,4 +87,16 @@ pub fn convert_increment_to_precision(increment: rust_decimal::Decimal) -> u32 {
         precision += 1;
     }
     return precision
+}
+
+/// Lead setting file from JSON
+pub(crate) fn read_settings(filepath: &str) -> SettingsFile {
+    let settings_filepath = std::path::Path::new(&filepath);
+    let settings_file = std::fs::File::open(settings_filepath)
+        .expect("Config file not found");
+    let reader = std::io::BufReader::new(settings_file);
+    let settings: SettingsFile =
+        serde_json::from_reader(reader).expect("Error when reading config json");
+
+    return settings
 }
