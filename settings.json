@@ -8,5 +8,5 @@
   "order_size": 1.618,
   "tp_percent": 0.1,
   "sl_percent": 0.05,
-  "positions_filename": "positions.csv"
+  "write_to_file": true
 }

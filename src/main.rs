@@ -80,6 +80,7 @@ async fn main() {
 
     // Set up loop outer variables
     let mut count: usize = 0;
+    let mut positions_count: usize = 0;
     let mut current_side: helpers::Side = helpers::Side::default();
     let mut price = rust_decimal::Decimal::default();
 
@@ -183,6 +184,7 @@ async fn main() {
                     current_side, order_size, settings.market_name, price, tp_price,
                     settings.tp_percent, sl_price, settings.sl_percent
                 );
+                positions_count += 1;
 
                 if settings.live {
                     // TODO: Use Kelly criterion for order sizing
@@ -233,12 +235,15 @@ async fn main() {
                 }
 
                 // Write the positions to a csv
-                helpers::write_to_csv(
-                    &settings.positions_filename,
-                    price,
-                    order_size,
-                    &current_side,
-                ).expect("Unable to write positions to file.");
+                if settings.write_to_file {
+                    helpers::write_to_csv(
+                        "positions.csv",
+                        price,
+                        order_size,
+                        &current_side,
+                        positions_count
+                    ).expect("Unable to write positions to file.");
+                }
             }
         }
     }

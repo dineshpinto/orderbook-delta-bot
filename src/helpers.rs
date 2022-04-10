@@ -21,8 +21,8 @@ pub(crate) struct SettingsFile {
     pub(crate) tp_percent: rust_decimal::Decimal,
     /// Percent to stop loss at
     pub(crate) sl_percent: rust_decimal::Decimal,
-    /// Filename to store positions
-    pub(crate) positions_filename: String,
+    /// Store positions in csv (positions.csv by default)
+    pub(crate) write_to_file: bool,
 }
 
 
@@ -37,8 +37,8 @@ pub(crate) enum Side {
 impl std::fmt::Display for Side {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Side::Buy => write!(f, "long"),
-            Side::Sell => write!(f, "short"),
+            Side::Buy => write!(f, "buy"),
+            Side::Sell => write!(f, "sell"),
             Side::None => write!(f, "none"),
         }
     }
@@ -51,23 +51,38 @@ impl Default for Side {
 }
 
 
-/// Write utc time, price and current position to a csv file
+/// Write utc time, price, size and current position to a csv file
 pub(crate) fn write_to_csv(
     filename: &str,
     price: rust_decimal::Decimal,
     size: rust_decimal::Decimal,
-    position: &Side) -> Result<(), Box<dyn std::error::Error>> {
+    side: &Side,
+    count: usize) -> Result<(), Box<dyn std::error::Error>> {
     let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 
+    // Append to existing file, or create new file
     let file = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
-        .append(true)
+        .append(false)
         .open(String::from(filename))
         .unwrap();
-    let mut wtr = csv::Writer::from_writer(file);
+
     log::debug!("Writing position to {:?}", String::from(filename));
-    wtr.write_record(&[utc_time.to_string(), price.to_string(), size.to_string(), position.to_string()])?;
+
+    let mut wtr = csv::Writer::from_writer(file);
+    if count == 1 as usize {
+        // On first run, write header
+        wtr.write_record(&["utc_time", "price", "size", "side"])?;
+    }
+    wtr.write_record(
+        &[
+            utc_time.to_string(),
+            price.to_string(),
+            size.to_string(),
+            side.to_string()
+        ]
+    )?;
     wtr.flush()?;
     Ok(())
 }
