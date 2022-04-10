@@ -143,9 +143,10 @@ async fn main() {
                 let mut _side: helpers::Side = helpers::Side::Buy;
 
                 if perp_delta > bb_upper {
-                    // Enter long position
-                    _side = helpers::Side::Buy;
-                    price = ask_price;
+                    // Enter short position
+                    _side = helpers::Side::Sell;
+                    price = bid_price;
+
                     // Continue if we are already on the same side, else change side
                     if _side == current_side { continue; } else { current_side = _side }
 
@@ -154,9 +155,10 @@ async fn main() {
                         _side, price
                     );
                 } else if perp_delta < bb_lower {
-                    // Enter short position
-                    _side = helpers::Side::Sell;
-                    price = bid_price;
+                    // Enter long position
+                    _side = helpers::Side::Buy;
+                    price = ask_price;
+
                     // Continue if we are already on the same side, else change side
                     if _side == current_side { continue; } else { current_side = _side }
 

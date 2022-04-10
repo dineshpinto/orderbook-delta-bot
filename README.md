@@ -22,10 +22,10 @@ We use the definitions:
 | `bb_upper`   | Upper bollinger band of `delta_perp`                           |
 | `bb_lower`   | Lower bollinger band of `delta_perp`                           |
 
-| Trigger                   | Position |
-|---------------------------|----------|
-| `delta_perp` > `bb_upper` | short    |
-| `delta_perp` < `bb_lower` | long     |
+| Trigger                 | Position |
+|-------------------------|----------|
+| `delta_perp > bb_upper` | short    |
+| `delta_perp < bb_lower` | long     |
 
 A full analysis of this strategy is detailed [here](https://github.com/dineshpinto/market-analytics).
 
@@ -54,15 +54,18 @@ cargo run
 ## Settings
 `settings.json` contains all the configurable options:
 
-| Name                 | Explanation                                                                 |
-|----------------------|-----------------------------------------------------------------------------|
-| `market_name`        | Name of futures market on FTX (default: BTC-PERP)                           |
-| `time_delta`         | Delay in seconds between queries (default: 5)                               |
-| `bb_period`          | Bollinger band period (default: 20)                                         |
-| `bb_std_dev`         | Bollinger band standard deviation (default: 2)                              |
-| `orderbook_depth`    | Depth of orderbook to query (default: 1)                                    |
-| `live`               | Place live orders on FTX, requires API keys in `.env` (default: false)      |
-| `positions_filename` | Store positions in a csv file for further analysis (default: positions.csv) |
+| Name              | Explanation                                                                 |
+|-------------------|-----------------------------------------------------------------------------|
+| `market_name`     | Name of futures market on FTX (default: BTC-PERP)                           |
+| `time_delta`      | Delay in seconds between queries (default: 5)                               |
+| `bb_period`       | Bollinger band period (default: 20)                                         |
+| `bb_std_dev`      | Bollinger band standard deviation (default: 2)                              |
+| `orderbook_depth` | Depth of orderbook to query (default: 1)                                    |
+| `live`            | Place live orders on FTX, requires API keys in `.env` (default: false)      |
+| `order_size`      | Size of order to place (default: 1.168 BTC)                                 |
+| `tp_percent`      | Percent move to take profit at (default: 0.1%)                              |
+| `sl_percent`      | Percent move to stop loss at (default: 0.05%)                               |
+| `write_to_file`   | Store positions in a csv file for further analysis (default: positions.csv) |
 
 ## Disclaimer
 This project is only for educational purposes. There is no guarantee of the accuracy of the output data. Do not make 
