@@ -1,9 +1,13 @@
 [package]
 name = "orderbook-delta-bot"
 version = "0.2.0"
+authors = ["Dinesh Pinto"]
 edition = "2021"
+description = "A delta volume trading bot in Rust."
+keywords = ["trading-bot", "cryptocurrency"]
+license = "MIT"
+repository = "https://github.com/dineshpinto/orderbook-delta-bot"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 ftx = "0.4.3"
