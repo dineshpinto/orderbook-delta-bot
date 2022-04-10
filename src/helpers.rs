@@ -57,21 +57,21 @@ pub(crate) fn write_to_csv(
     price: rust_decimal::Decimal,
     size: rust_decimal::Decimal,
     side: &Side,
-    count: usize) -> Result<(), Box<dyn std::error::Error>> {
+    positions_count: usize) -> Result<(), Box<dyn std::error::Error>> {
     let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 
     // Append to existing file, or create new file
     let file = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
-        .append(false)
+        .append(true)
         .open(String::from(filename))
         .unwrap();
 
     log::debug!("Writing position to {:?}", String::from(filename));
 
     let mut wtr = csv::Writer::from_writer(file);
-    if count == 1 as usize {
+    if positions_count == 1 as usize {
         // On first run, write header
         wtr.write_record(&["utc_time", "price", "size", "side"])?;
     }
