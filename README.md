@@ -10,7 +10,7 @@ We counter-trade those deviations, and enter short/long positions based on trigg
 on the orderbook delta 
 from a (10-20) period rolling bollinger band.
 
-We are testing this with BTC-PERP on FTX, which has good liquidity and small spreads. 
+We are testing this with BTC-PERP on FTX, which has good liquidity and small spreads (and the best API I've seen). 
 In principle, the scheme could be modified for lower liquidity pairs too, perhaps by adjusting the bollinger band width 
 and length for generating triggers.
 
