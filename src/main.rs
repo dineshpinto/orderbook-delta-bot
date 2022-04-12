@@ -13,6 +13,7 @@
 
 mod helpers;
 mod order_handler;
+mod tests;
 
 /// Core logical loop for the bot.
 ///
