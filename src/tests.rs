@@ -12,13 +12,13 @@ mod test_helpers{
     fn test_write_to_csv() {
         // Create a test file
         let filename = "write_to_csv_test.csv";
-        let _ = crate::helpers::write_to_csv(
+        crate::helpers::write_to_csv(
             filename,
             rust_decimal::Decimal::from(10 as i64),
             rust_decimal::Decimal::from(10 as i64),
             &crate::helpers::Side::Sell,
             1 as usize
-        );
+        ).unwrap();
 
         // Verify the file, and delete it
         let mut rdr = csv::Reader::from_path(filename).unwrap();
