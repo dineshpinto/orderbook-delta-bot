@@ -41,6 +41,17 @@ git clone https://github.com/dineshpinto/orderbook-delta-bot.git
 gh repo clone dineshpinto/orderbook-delta-bot
 ```
 
+### Set up bot
+
+#### Bot settings
+Rename `settings-example.json` to `settings.json`
+
+
+#### Bot live orders (optional)
+- Rename `.env.example` to `.env`, and enter in your FTX API keys
+- Set`live : true` in `settings.json`
+
+
 ### Install all dependencies and build
 ```shell
 cargo build
