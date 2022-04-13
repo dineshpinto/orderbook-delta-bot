@@ -17,3 +17,5 @@ target/
 
 # Additional files
 *.csv
+.env
+settings.json
