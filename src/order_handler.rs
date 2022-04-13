@@ -2,24 +2,41 @@
 //! trigger orders and canceling orders
 
 
+
 /// Create a market order on FTX
 pub(crate) async fn place_market_order(
     api: &ftx::rest::Rest,
     market_name: &str,
     order_side: ftx::rest::Side,
-    order_size: rust_decimal::Decimal) -> ftx::rest::Result<ftx::rest::OrderInfo> {
-    return api.request(ftx::rest::PlaceOrder {
+    order_size: rust_decimal::Decimal) -> bool {
+
+    let order= api.request(ftx::rest::PlaceOrder {
         market: std::string::String::from(market_name),
         side: order_side,
         price: None,
-        r#type: Default::default(),
+        r#type: ftx::rest::OrderType::Market,
         size: order_size,
-        reduce_only: true,
+        reduce_only: false,
         ioc: false,
         post_only: false,
         client_id: None,
         reject_on_price_band: false,
     }).await;
+
+    let order_success;
+    match order {
+        Err(e) => {
+            log::error!("Unable to place order, Err: {:?}", e);
+            order_success = false;
+        }
+        Ok(o) => {
+            log::info!("Order placed successfully: {:?}", o);
+            order_success = true;
+        }
+    };
+
+    return order_success
+
 }
 
 
@@ -46,11 +63,14 @@ pub(crate) async fn place_trigger_orders(
         ftx::rest::Side::Sell => ftx::rest::Side::Buy,
     };
 
+    let take_profit_success;
+    let stop_loss_success;
+
     let take_profit = api.request(ftx::rest::PlaceTriggerOrder {
         market: String::from(market_name),
         side: trigger_side,
         size: order_size,
-        r#type: Default::default(),
+        r#type: ftx::rest::OrderType::TakeProfit,
         trigger_price: tp_price,
         reduce_only: Option::from(true),
         retry_until_filled: None,
@@ -58,11 +78,22 @@ pub(crate) async fn place_trigger_orders(
         trail_value: None,
     }).await;
 
+    match take_profit {
+        Err(e) => {
+            log::error!("Unable to place take profit, Err: {:?}", e);
+            take_profit_success = false
+        }
+        Ok(o) => {
+            log::info!("Take profit placed successfully: {:?}", o);
+            take_profit_success = true
+        }
+    };
+
     let stop_loss = api.request(ftx::rest::PlaceTriggerOrder {
         market: String::from(market_name),
         side: trigger_side,
         size: order_size,
-        r#type: Default::default(),
+        r#type: ftx::rest::OrderType::Stop,
         trigger_price: sl_price,
         reduce_only: Option::from(true),
         retry_until_filled: None,
@@ -70,27 +101,16 @@ pub(crate) async fn place_trigger_orders(
         trail_value: None,
     }).await;
 
-    let take_profit_success;
-    match take_profit {
-        Ok(_o) => {
-            take_profit_success = true
-        }
-        Err(e) => {
-            log::error!("Unable to set take profit {:?}", e);
-            take_profit_success = false
-        }
-    }
-
-    let stop_loss_success;
     match stop_loss {
-        Ok(_o) => {
-            stop_loss_success = true
-        }
         Err(e) => {
-            log::error!("Unable to set stop loss {:?}", e);
+            log::error!("Unable to place stop loss, Err: {:?}", e);
             stop_loss_success = false
         }
-    }
+        Ok(o) => {
+            log::info!("Stop loss placed successfully: {:?}", o);
+            stop_loss_success = true
+        }
+    };
 
     return take_profit_success && stop_loss_success;
 }

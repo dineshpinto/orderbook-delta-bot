@@ -200,15 +200,11 @@ async fn main() {
                             order_size,
                         )
                     );
-                    match order_placed {
-                        Err(e) => {
-                            log::error!("Unable to place order, Err: {:?}", e);
-                            continue;
-                        }
-                        Ok(o) => {
-                            log::info!("Order placed successfully: {:?}", o);
-                        }
-                    };
+
+                    if !order_placed {
+                        log::warn!("Unable to place order, will continue with loop...");
+                        continue;
+                    }
 
                     // Place trigger orders on FTX
                     let triggers_placed = futures::executor::block_on(
