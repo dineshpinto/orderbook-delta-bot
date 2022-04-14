@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod test_helpers{
+mod test_helpers {
     use crate::helpers::{convert_increment_to_precision, read_settings, SettingsFile, write_to_csv};
 
     #[test]
@@ -18,7 +18,7 @@ mod test_helpers{
             rust_decimal::Decimal::from(10 as i64),
             rust_decimal::Decimal::from(10 as i64),
             &crate::helpers::Side::Sell,
-            1 as usize
+            1 as usize,
         ).unwrap();
 
         // Verify the file, and delete it
@@ -37,7 +37,7 @@ mod test_helpers{
     fn test_read_settings() {
         // Create a test file
         let filename = "test_read_settings.json";
-        let data =  SettingsFile {
+        let data = SettingsFile {
             market_name: "BTC-USD".to_string(),
             time_delta: 1,
             bb_period: 10,
@@ -47,7 +47,7 @@ mod test_helpers{
             order_size: Default::default(),
             tp_percent: Default::default(),
             sl_percent: Default::default(),
-            write_to_file: false
+            write_to_file: false,
         };
         serde_json::to_writer_pretty(
             &std::fs::File::create(filename).unwrap(), &data).unwrap();

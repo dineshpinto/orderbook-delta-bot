@@ -8,8 +8,7 @@ pub(crate) async fn place_market_order(
     market_name: &str,
     order_side: ftx::rest::Side,
     order_size: rust_decimal::Decimal) -> bool {
-
-    let order= api.request(ftx::rest::PlaceOrder {
+    let order = api.request(ftx::rest::PlaceOrder {
         market: std::string::String::from(market_name),
         side: order_side,
         price: None,
@@ -34,8 +33,7 @@ pub(crate) async fn place_market_order(
         }
     };
 
-    return order_success
-
+    return order_success;
 }
 
 /// Check if position is open on a market
@@ -44,10 +42,10 @@ pub(crate) async fn get_open_position(api: &ftx::rest::Rest, market_name: &str) 
 
     for position in positions {
         if position.future == market_name {
-            return true
+            return true;
         }
     }
-    return false
+    return false;
 }
 
 
@@ -57,7 +55,7 @@ pub(crate) async fn market_close_order(api: &ftx::rest::Rest, market_name: &str)
 
     for position in positions {
         if position.future == market_name {
-            let order_closed = api.request( ftx::rest::PlaceOrder {
+            let order_closed = api.request(ftx::rest::PlaceOrder {
                 market: String::from(market_name),
                 side: crate::helpers::invert_side(position.side),
                 price: None,
@@ -67,7 +65,7 @@ pub(crate) async fn market_close_order(api: &ftx::rest::Rest, market_name: &str)
                 ioc: false,
                 post_only: false,
                 client_id: None,
-                reject_on_price_band: false
+                reject_on_price_band: false,
             }).await;
 
             return match order_closed {
@@ -83,7 +81,7 @@ pub(crate) async fn market_close_order(api: &ftx::rest::Rest, market_name: &str)
         }
     }
     log::warn!("No order open, cannot close");
-    return false
+    return false;
 }
 
 /// Cancel all open orders and trigger orders on FTX
@@ -99,12 +97,12 @@ pub(crate) async fn cancel_all_trigger_orders(api: &ftx::rest::Rest, market_name
         Ok(o) => {
             log::info!("Cancelled all trigger orders: {:?}", o);
             true
-        },
+        }
         Err(e) => {
             log::error!("Unable to cancel orders Err: {:?}, panicking!", e);
             false
         }
-    }
+    };
 }
 
 /// Place take profit and stop loss orders
@@ -177,7 +175,6 @@ pub(crate) fn calculate_tp_and_sl(
     tp_percent: rust_decimal::Decimal,
     sl_percent: rust_decimal::Decimal,
     price_precision: u32) -> (rust_decimal::Decimal, rust_decimal::Decimal) {
-
     let div = rust_decimal::Decimal::from(100);
 
     let (tp_price, sl_price) = match side {

@@ -118,7 +118,7 @@ pub(crate) fn read_settings(filepath: &str) -> SettingsFile {
 
 /// Invert side i.e. buy -> sell, sell -> buy
 pub(crate) fn invert_side(side: ftx::rest::Side) -> ftx::rest::Side {
-    return  match side {
+    return match side {
         ftx::rest::Side::Buy => ftx::rest::Side::Sell,
         ftx::rest::Side::Sell => ftx::rest::Side::Buy
     };

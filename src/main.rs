@@ -75,8 +75,10 @@ async fn main() {
             future_name: String::from(&settings.market_name)
         }
     ).await.unwrap();
-    let price_precision = helpers::convert_increment_to_precision(price_result.price_increment);
-    let size_precision = helpers::convert_increment_to_precision(price_result.size_increment);
+    let price_precision = helpers::convert_increment_to_precision(
+        price_result.price_increment);
+    let size_precision = helpers::convert_increment_to_precision(
+        price_result.size_increment);
     let order_size = settings.order_size.round_dp(size_precision);
 
     // Set up loop outer variables
@@ -183,7 +185,8 @@ async fn main() {
                 let (tp_price, sl_price) = order_handler::calculate_tp_and_sl(
                     price, order_side, settings.tp_percent, settings.sl_percent, price_precision);
                 log::info!(
-                    "{:?} {:?} {} at {:?}. Take profit at {:?} ({:?}%) and stop loss at {:?} ({:?}%)",
+                    "{:?} {:?} {} at {:?}. Take profit at {:?} ({:?}%) and \
+                    stop loss at {:?} ({:?}%)",
                     current_side, order_size, settings.market_name, price, tp_price,
                     settings.tp_percent, sl_price, settings.sl_percent
                 );
@@ -197,9 +200,15 @@ async fn main() {
                     if open_position {
                         log::info!("Closing existing position...");
                         futures::executor::block_on(
-                            order_handler::market_close_order(&api, &settings.market_name));
+                            order_handler::market_close_order(
+                                &api, &settings.market_name,
+                            )
+                        );
                         futures::executor::block_on(
-                            order_handler::cancel_all_trigger_orders(&api, &settings.market_name));
+                            order_handler::cancel_all_trigger_orders(
+                                &api, &settings.market_name,
+                            )
+                        );
                     }
 
                     // TODO: Use Kelly criterion for order sizing
@@ -227,7 +236,8 @@ async fn main() {
                             order_size,
                             tp_price,
                             sl_price,
-                        ));
+                        )
+                    );
 
                     // If unable to place TP or SL, cancel all orders
                     // TODO: Market close position in event of failure
@@ -236,7 +246,10 @@ async fn main() {
                         let order_closed = futures::executor::block_on(
                             order_handler::market_close_order(&api, &settings.market_name));
                         let triggers_cancelled = futures::executor::block_on(
-                            order_handler::cancel_all_trigger_orders(&api, &settings.market_name));
+                            order_handler::cancel_all_trigger_orders(
+                                &api, &settings.market_name,
+                            )
+                        );
 
                         if order_closed && triggers_cancelled {
                             continue;
