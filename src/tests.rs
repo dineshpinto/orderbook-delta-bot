@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod test_helpers {
-    use crate::helpers::{convert_increment_to_precision, read_settings, SettingsFile, write_to_csv};
+    use crate::helpers::{convert_increment_to_precision, invert_side, read_settings, SettingsFile,
+                         Side, write_to_csv};
 
     #[test]
     fn test_convert_increment_to_precision() {
@@ -17,7 +18,7 @@ mod test_helpers {
             filename,
             rust_decimal::Decimal::from(10 as i64),
             rust_decimal::Decimal::from(10 as i64),
-            &crate::helpers::Side::Sell,
+            &Side::Sell,
             1 as usize,
         ).unwrap();
 
@@ -59,5 +60,14 @@ mod test_helpers {
         assert_eq!(settings.bb_std_dev, 0 as f64);
         assert_eq!(settings.orderbook_depth, 0 as u32);
         std::fs::remove_file(filename).unwrap();
+    }
+
+    #[test]
+    fn test_invert_side() {
+        let inverted_sell_side = invert_side(ftx::rest::Side::Sell);
+        let inverted_buy_side = invert_side(ftx::rest::Side::Buy);
+
+        assert_eq!(inverted_sell_side, ftx::rest::Side::Buy);
+        assert_eq!(inverted_buy_side, ftx::rest::Side::Sell);
     }
 }
