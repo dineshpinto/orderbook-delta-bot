@@ -1,6 +1,7 @@
 //! A trading bot written in Rust.
 //!
-//! Dinesh Pinto, 2022.
+//! © Dinesh Pinto, 2022
+//! LICENSE: Apache-2.0, see http://www.apache.org/licenses/LICENSE-2.0
 //!
 //! Uses a trading strategy based on counter trading large deviations in
 //! the delta volume (i.e. bid volume - ask volume) on the futures orderbook.
@@ -19,10 +20,13 @@ mod tests;
 ///
 /// The process is:
 /// 1. Set up asynchronous connection to the FTX API
-/// 1. Wait for N time steps, where N is the length of the bollinger band.
-/// 2. Set the trigger to ready the bot
-/// 3. Enter a long/short position, with a take profit and stop loss if needed
-/// 4. Monitor position and change sides if needed
+/// 2. Wait for N time steps, where N is the length of the bollinger band.
+/// 3. Set the trigger to ready the bot
+/// 4. Enter a long/short position based on the entry conditions specified in settings
+/// 5. Exit by either hitting the take profit/stop loss or by switching sides
+///
+/// Note: For risk management purposes, in case the bot is unable to place TP/SL after
+/// opening a position it will close the open position and panic.
 ///
 #[tokio::main]
 async fn main() {
