@@ -137,7 +137,7 @@ async fn main() {
                     }
                     Ok(o) => {
                         (o.bid.unwrap(), o.ask.unwrap())
-                    },
+                    }
                 };
 
                 // Create local variables to handle side
@@ -190,6 +190,18 @@ async fn main() {
                 positions_count += 1;
 
                 if settings.live {
+                    // Check if position is currently open and close it
+                    let open_position = futures::executor::block_on(
+                        order_handler::get_open_position(&api, &settings.market_name));
+
+                    if open_position {
+                        log::info!("Closing existing position...");
+                        futures::executor::block_on(
+                            order_handler::market_close_order(&api, &settings.market_name));
+                        futures::executor::block_on(
+                            order_handler::cancel_all_trigger_orders(&api, &settings.market_name));
+                    }
+
                     // TODO: Use Kelly criterion for order sizing
                     // Place order on FTX
                     let order_placed = futures::executor::block_on(
@@ -221,14 +233,16 @@ async fn main() {
                     // TODO: Market close position in event of failure
                     if !triggers_placed {
                         log::warn!("Cancelling all orders...");
-                        let cancel_orders = futures::executor::block_on(
-                            order_handler::cancel_all_orders(&api, &settings.market_name));
-                        match cancel_orders {
-                            Ok(_o) => continue,
-                            Err(e) => {
-                                log::error!("Unable to cancel orders Err: {:?}, panicking!", e);
-                                panic!()
-                            }
+                        let order_closed = futures::executor::block_on(
+                            order_handler::market_close_order(&api, &settings.market_name));
+                        let triggers_cancelled = futures::executor::block_on(
+                            order_handler::cancel_all_trigger_orders(&api, &settings.market_name));
+
+                        if order_closed && triggers_cancelled {
+                            continue;
+                        } else {
+                            log::error!("Unable to close order, panicking!");
+                            panic!()
                         }
                     }
                 }
@@ -240,7 +254,7 @@ async fn main() {
                         price,
                         order_size,
                         &current_side,
-                        positions_count
+                        positions_count,
                     ).expect("Unable to write positions to file.");
                 }
             }

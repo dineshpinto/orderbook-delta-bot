@@ -101,7 +101,7 @@ pub(crate) fn convert_increment_to_precision(increment: rust_decimal::Decimal) -
         incr *= rust_decimal::Decimal::from(10);
         precision += 1;
     }
-    return precision
+    return precision;
 }
 
 /// Lead setting file from JSON
@@ -113,5 +113,13 @@ pub(crate) fn read_settings(filepath: &str) -> SettingsFile {
     let settings: SettingsFile =
         serde_json::from_reader(reader).expect("Error when reading config json");
 
-    return settings
+    return settings;
+}
+
+/// Invert side i.e. buy -> sell, sell -> buy
+pub(crate) fn invert_side(side: ftx::rest::Side) -> ftx::rest::Side {
+    return  match side {
+        ftx::rest::Side::Buy => ftx::rest::Side::Sell,
+        ftx::rest::Side::Sell => ftx::rest::Side::Buy
+    };
 }
