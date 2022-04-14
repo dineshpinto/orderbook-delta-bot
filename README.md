@@ -49,7 +49,7 @@ Rename `settings-example.json` to `settings.json`
 
 #### Bot live orders (optional)
 - Rename `.env.example` to `.env`, and enter in your FTX API keys
-- Set`live : true` in `settings.json`
+- Set`"live" : true` in `settings.json`
 
 
 ### Install all dependencies and build
