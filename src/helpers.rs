@@ -60,6 +60,17 @@ pub(crate) fn write_to_csv(
     positions_count: usize) -> Result<(), Box<dyn std::error::Error>> {
     let utc_time: chrono::prelude::DateTime<chrono::prelude::Utc> = chrono::prelude::Utc::now();
 
+    // Delete any existing file on first run
+    if positions_count == 1 as usize {
+        let remove_file = std::fs::remove_file(filename);
+        match remove_file {
+            Err(_e) => {
+                log::info!("Positions file does not exist, creating new file")
+            }
+            Ok(o) => o
+        }
+    }
+
     // Append to existing file, or create new file
     let file = std::fs::OpenOptions::new()
         .write(true)
@@ -71,10 +82,12 @@ pub(crate) fn write_to_csv(
     log::debug!("Writing position to {:?}", String::from(filename));
 
     let mut wtr = csv::Writer::from_writer(file);
+
+    // On first run, write header
     if positions_count == 1 as usize {
-        // On first run, write header
         wtr.write_record(&["utc_time", "price", "size", "side"])?;
     }
+    // Write row
     wtr.write_record(
         &[
             utc_time.to_string(),
