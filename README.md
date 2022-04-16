@@ -6,28 +6,28 @@ The strategy based on the concept of *mean reversion*. We look for large deviati
 FTX at a depth of 1. 
 These deviations could be caused by over-enthusiastic and over-leveraged market participants.
 
-We counter-trade those deviations, and enter short/long positions based on triggers given by a large deviation (> 2 SDs) 
-on the orderbook delta 
-from a (10-20) period rolling bollinger band.
+We counter-trade those deviations, and enter short/long positions based on triggers given by a large deviation 
+(> 2 SDs) on the orderbook delta  from a 20 period rolling bollinger band.
 
-We are testing this with BTC-PERP on FTX, which has good liquidity and small spreads (and FTX has the best API I've seen). 
-In principle, the scheme could be modified for lower liquidity pairs too, perhaps by adjusting the bollinger band width 
-and length for generating triggers.
+We are testing this with BTC-PERP on FTX, which has good liquidity and small spreads (and FTX has the best API 
+in the business). In principle, the scheme could be modified for lower liquidity pairs too, perhaps by adjusting 
+the bollinger band length and standard deviation for generating triggers.
 
 We use the definitions: 
 
 | Name         | Definition                                                     |
 |--------------|----------------------------------------------------------------|
 | `delta_perp` | Difference between bid and ask volume at depth = 1 on BTC-PERP |
-| `bb_upper`   | Upper bollinger band of `delta_perp`                           |
-| `bb_lower`   | Lower bollinger band of `delta_perp`                           |
+| `bb_upper`   | Upper bollinger band (L=20, SD=2) of `delta_perp`              |
+| `bb_lower`   | Lower bollinger band (L=20, SD=2) of `delta_perp`              |
 
 | Trigger                 | Position |
 |-------------------------|----------|
 | `delta_perp > bb_upper` | short    |
 | `delta_perp < bb_lower` | long     |
 
-A full analysis of this strategy is detailed [here](https://github.com/dineshpinto/market-analytics).
+A full analysis of this strategy is detailed in 
+[dineshpinto/market-analytics](https://github.com/dineshpinto/market-analytics).
 
 ## Installation
 ### Clone the repository
@@ -44,10 +44,10 @@ gh repo clone dineshpinto/orderbook-delta-bot
 ### Set up bot
 
 #### Bot settings
-Rename `settings-example.json` to `settings.json`
+Rename `settings-example.json` to `settings.json`. The default settings are given below.
 
 
-#### Bot live orders (optional)
+#### Place live orders (optional)
 - Rename `.env.example` to `.env`, and enter in your FTX API keys
 - Set`"live" : true` in `settings.json`
 
@@ -79,10 +79,11 @@ cargo run
 | `write_to_file`   | Store positions in a csv file for further analysis (default: positions.csv) |
 
 ## TODO
-- [ ] Use Kelly criterion for order sizing
-- [ ] Use dynamic take profit and stop loss based on predictive analysis
+- [ ] Use Kelly criterion for order sizing (probabilities can be estimated from prior analysis)
+- [ ] Use dynamic take profit and stop loss based on market movement
 - [ ] Perform spectral analysis with wider timeframes to identify optimal 
 market conditions
+- [ ] Switch to websockets API for reduced data query lag
 
 ## Disclaimer
 This project is only for educational purposes. There is no guarantee of the accuracy of the output data. Do not make 
