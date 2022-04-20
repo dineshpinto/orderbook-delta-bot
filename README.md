@@ -62,6 +62,10 @@ cargo build
 cargo run
 ```
 
+## Optional
+You can use an orderbook visualizer when running the script, like this very beautiful 3D variant built in WebGL by Kris Machowski at
+[3dorderbook.com](https://www.3dorderbook.com). Use it to find some interesting patterns!
+
 ## Settings
 `settings.json` contains all the configurable options:
 
