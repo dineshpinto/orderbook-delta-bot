@@ -88,6 +88,7 @@ You can use an orderbook visualizer when running the script, like this very beau
 - [ ] Perform spectral analysis with wider timeframes to identify optimal 
 market conditions
 - [ ] Switch to websockets API for reduced data query lag
+- [ ] For more high frequency applications, switching to a library like [ccapi](https://github.com/crypto-chassis/ccapi/) is handy. Unfortunately this only exists for C++ right now.
 
 ## Disclaimer
 This project is for educational purposes only. You should not construe any such information or other material as legal, tax, investment, financial, or other advice. Nothing contained here constitutes a solicitation, recommendation, endorsement, or offer by me or any third party service provider to buy or sell any securities or other financial instruments in this or in any other jurisdiction in which such solicitation or offer would be unlawful under the securities laws of such jurisdiction.
