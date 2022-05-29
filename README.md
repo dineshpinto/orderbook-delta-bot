@@ -84,7 +84,7 @@ You can use an orderbook visualizer when running the script, like this very beau
 
 ## TODO
 - [ ] Use Kelly criterion for order sizing (probabilities can be estimated from prior analysis)
-- [ ] Use dynamic take profit and stop loss based on market movement
+- [ ] Use dynamic take profit and stop loss based on market movement (this is simply used as protection from getting rekt, not as actual exit points)
 - [ ] Perform spectral analysis with wider timeframes to identify optimal 
 market conditions
 - [ ] Switch to websockets API for reduced data query lag
