@@ -44,10 +44,6 @@ async fn main() {
 
     log::info!("Settings file loaded from {:?}.", settings_filepath);
     log::info!("{:?}", settings);
-    log::info!("Setting trigger in {:?} iterations (approx {:?}s)...",
-        settings.bb_period,
-        settings.bb_period as u64 * settings.time_delta
-    );
 
     // Set up connection to FTX API
     let api = if settings.live {
@@ -66,30 +62,55 @@ async fn main() {
         )
     };
 
+    // Get precision for price and size for current market,
+    // use MidpointNearestEven rounding (Banker's rounding)
+    let future_result = api.request(
+        ftx::rest::GetFuture {
+            future_name: String::from(&settings.market_name)
+        }
+    ).await.unwrap();
+
+    // Set precision for price
+    let price_precision = helpers::convert_increment_to_precision(
+        future_result.price_increment);
+
+    // Set precision for order
+
+    // Panic if order size is too small
+    if settings.order_size < future_result.size_increment {
+        log::error!(
+            "Order size is smaller than minimum order size ({:?} < {:?})",
+            settings.order_size, future_result.size_increment
+        );
+        panic!();
+    }
+    // Orders with size_increment < 1 need to handled separately from size_increment > 1
+    let mut _order_size = rust_decimal::Decimal::from(0);
+    if future_result.size_increment < rust_decimal::Decimal::from(1) {
+        let size_precision = helpers::convert_increment_to_precision(
+            future_result.size_increment);
+        _order_size = settings.order_size.round_dp(size_precision);
+    } else {
+        _order_size = (future_result.size_increment * settings.order_size).round()
+            / future_result.size_increment;
+    }
+
     // Set up bollinger bands
     let mut bb = ta::indicators::BollingerBands::new(
         settings.bb_period,
         settings.bb_std_dev,
     ).unwrap();
 
-    // Get precision for price and size for current market,
-    // use MidpointNearestEven rounding (Banker's rounding)
-    let price_result = api.request(
-        ftx::rest::GetFuture {
-            future_name: String::from(&settings.market_name)
-        }
-    ).await.unwrap();
-    let price_precision = helpers::convert_increment_to_precision(
-        price_result.price_increment);
-    let size_precision = helpers::convert_increment_to_precision(
-        price_result.size_increment);
-    let order_size = settings.order_size.round_dp(size_precision);
-
     // Set up loop outer variables
     let mut count: usize = 0;
     let mut positions_count: usize = 0;
     let mut current_side: helpers::Side = helpers::Side::default();
     let mut price = rust_decimal::Decimal::default();
+
+    log::info!("Setting trigger in {:?} iterations (approx {:?}s)...",
+        settings.bb_period,
+        settings.bb_period as u64 * settings.time_delta
+    );
 
     loop {
         count += 1;
@@ -191,7 +212,7 @@ async fn main() {
                 log::info!(
                     "{:?} {:?} {} at {:?}. Take profit at {:?} ({:?}%) and \
                     stop loss at {:?} ({:?}%)",
-                    current_side, order_size, settings.market_name, price, tp_price,
+                    current_side, _order_size, settings.market_name, price, tp_price,
                     settings.tp_percent, sl_price, settings.sl_percent
                 );
                 positions_count += 1;
@@ -222,7 +243,7 @@ async fn main() {
                             &api,
                             &settings.market_name,
                             order_side,
-                            order_size,
+                            _order_size,
                         )
                     );
 
@@ -237,7 +258,7 @@ async fn main() {
                             &api,
                             &settings.market_name,
                             order_side,
-                            order_size,
+                            _order_size,
                             tp_price,
                             sl_price,
                         )
@@ -269,7 +290,7 @@ async fn main() {
                     helpers::write_to_csv(
                         "positions.csv",
                         price,
-                        order_size,
+                        _order_size,
                         &current_side,
                         positions_count,
                     ).expect("Unable to write positions to file.");
