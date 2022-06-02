@@ -110,7 +110,7 @@ pub(crate) fn convert_increment_to_precision(increment: rust_decimal::Decimal) -
     let mut precision = 0;
     let mut incr = increment;
 
-    while incr != rust_decimal::Decimal::from(1) {
+    while incr < rust_decimal::Decimal::from(1) {
         incr *= rust_decimal::Decimal::from(10);
         precision += 1;
     }

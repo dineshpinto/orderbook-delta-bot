@@ -72,7 +72,8 @@ async fn main() {
 
     // Set precision for price
     let price_precision = helpers::convert_increment_to_precision(
-        future_result.price_increment);
+        future_result.price_increment
+    );
 
     // Set precision for order
 
