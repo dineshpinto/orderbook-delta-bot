@@ -49,7 +49,7 @@ Rename `settings-example.json` to `settings.json`. The default settings are give
 
 #### Place live orders (optional)
 - Rename `.env.example` to `.env`, and enter in your FTX API keys
-- Set`"live" : true` in `settings.json`
+- Set `"live" : true` in `settings.json`
 
 
 ### Install all dependencies and build
@@ -69,18 +69,18 @@ You can use an orderbook visualizer when running the script, like this very beau
 ## Settings
 `settings.json` contains all the configurable options:
 
-| Name              | Explanation                                                                 |
-|-------------------|-----------------------------------------------------------------------------|
-| `market_name`     | Name of futures market on FTX (default: BTC-PERP)                           |
-| `time_delta`      | Delay in seconds between queries (default: 5)                               |
-| `bb_period`       | Bollinger band period (default: 20)                                         |
-| `bb_std_dev`      | Bollinger band standard deviation (default: 2)                              |
-| `orderbook_depth` | Depth of orderbook to query (default: 1)                                    |
-| `live`            | Place live orders on FTX, requires API keys in `.env` (default: false)      |
-| `order_size`      | Size of order to place (default: 1.618 BTC)                                 |
-| `tp_percent`      | Percent move to take profit at (default: 0.1%)                              |
-| `sl_percent`      | Percent move to stop loss at (default: 0.05%)                               |
-| `write_to_file`   | Store positions in a csv file for further analysis (default: positions.csv) |
+| Name              | Explanation                                                            |
+|-------------------|------------------------------------------------------------------------|
+| `market_name`     | Name of futures market on FTX (default: BTC-PERP)                      |
+| `time_delta`      | Delay in seconds between queries (default: 5)                          |
+| `bb_period`       | Bollinger band period (default: 20)                                    |
+| `bb_std_dev`      | Bollinger band standard deviation (default: 2)                         |
+| `orderbook_depth` | Depth of orderbook to query (default: 1)                               |
+| `live`            | Place live orders on FTX, requires API keys in `.env` (default: false) |
+| `order_size`      | Size of order to place (default: 0.1618 BTC)                           |
+| `tp_percent`      | Percent move to take profit at (default: 0.1%)                         |
+| `sl_percent`      | Percent move to stop loss at (default: 0.05%)                          |
+| `write_to_file`   | Store positions in a csv file for further analysis (default: true)     |
 
 ## TODO
 - [ ] Use Kelly criterion for order sizing (probabilities can be estimated from prior analysis)
