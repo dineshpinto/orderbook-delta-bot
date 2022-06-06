@@ -95,6 +95,7 @@ async fn main() {
         _order_size = (future_result.size_increment * settings.order_size).round()
             / future_result.size_increment;
     }
+    log::info!("Order size and precision check...PASS");
 
     // Set up bollinger bands
     let mut bb = ta::indicators::BollingerBands::new(
