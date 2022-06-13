@@ -6,7 +6,7 @@
   "orderbook_depth": 1,
   "live": false,
   "order_size": 0.1618,
-  "tp_percent": 0.1,
-  "sl_percent": 0.05,
+  "tp_percent": 0.2,
+  "sl_percent": 0.1,
   "write_to_file": true
 }

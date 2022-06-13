@@ -1,6 +1,6 @@
 [package]
 name = "orderbook-delta-bot"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Dinesh Pinto"]
 edition = "2021"
 description = "A simple Rust trading bot to counter trading deviations in the futures orderbook."

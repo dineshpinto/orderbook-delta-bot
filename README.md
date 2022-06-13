@@ -78,8 +78,8 @@ You can use an orderbook visualizer when running the script, like this very beau
 | `orderbook_depth` | Depth of orderbook to query (default: 1)                               |
 | `live`            | Place live orders on FTX, requires API keys in `.env` (default: false) |
 | `order_size`      | Size of order to place (default: 0.1618 BTC)                           |
-| `tp_percent`      | Percent move to take profit at (default: 0.1%)                         |
-| `sl_percent`      | Percent move to stop loss at (default: 0.05%)                          |
+| `tp_percent`      | Percent move to take profit at (default: 0.2%)                         |
+| `sl_percent`      | Percent move to stop loss at (default: 0.1%)                           |
 | `write_to_file`   | Store positions in a csv file for further analysis (default: true)     |
 
 ## TODO
