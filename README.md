@@ -26,7 +26,8 @@ We use the definitions:
 | `delta_perp > bb_upper` | short    |
 | `delta_perp < bb_lower` | long     |
 
-A full analysis of this strategy along with a GUI visualizer is in 
+
+A full analysis of this strategy along with it's limitations in 
 [dineshpinto/market-analytics](https://github.com/dineshpinto/market-analytics).
 
 ## Installation
@@ -62,9 +63,11 @@ cargo build
 cargo run
 ```
 
-## Optional
-You can use an orderbook visualizer when running the script, like this very beautiful 3D variant built in WebGL by Kris Machowski at
-[3dorderbook.com](https://www.3dorderbook.com). Use it to find some interesting patterns!
+## Orderbook visualizer
+You can use a live orderbook visualizer written in Python. The visualizer uses Dash and Plotly, and contains a set of configurable parameters and strategies. See `orderbook-delta-visualizer/` for more details.
+
+[GUI](https://user-images.githubusercontent.com/15251343/176155957-e6096eb1-a1ef-4373-b66e-7ebaa83b5b84.mov)
+
 
 ## Settings
 `settings.json` contains all the configurable options:
