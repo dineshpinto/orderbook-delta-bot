@@ -1,18 +1,20 @@
 import csv
-import dash
 import datetime
+from collections import deque
+from typing import Tuple
+
+import dash
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
-from collections import deque
 from dash import dcc, html
 from dash.dependencies import Output, Input
 from ftx import FtxClient
 from plotly.subplots import make_subplots
-from typing import Tuple
 
-from ftx_websocket_client import FtxWebsocketClient
-from orderbook_delta_strategies import Position, Parameters, BaseStrategy
+from parameters import Parameters
+from src.ftx_websocket_client import FtxWebsocketClient
+from strategy import Position, BaseStrategy
 
 
 def get_bid_ask_and_delta(market: str) -> Tuple[float, float, float, float, float]:

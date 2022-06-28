@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "orderbook-delta-visualizer"
 version = "0.1.0"
-description = "A GUI visualizer for orderbook-delta-bot"
+description = "A GUI visualizer in Python for orderbook-delta-bot"
 authors = ["dineshpinto <dkpinto95@gmail.com>"]
 license = "Apache-v2"
 
