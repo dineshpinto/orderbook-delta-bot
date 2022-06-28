@@ -29,3 +29,4 @@ This will start a dash server, which you can open in your browser.
 ### To modify parameters
 - All parameters are stored in `parameters.py/Parameters`
 - All parameters can be updated live, the server will restart automatically
+- Running the visualizer generates saves a time series (`pandas.DataFrame`) of all observed data on exit

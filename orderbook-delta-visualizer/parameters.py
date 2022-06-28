@@ -6,6 +6,13 @@ from typing import Union
 from strategy import BaseStrategy, BollingerBandStrategy
 
 
+def get_formatted_filepath(folder: str, base_filename: str, spot_market: str, perp_future: str) -> str:
+    """ Example output filename: 2022-06-28_08-52-21_BTC-USD_BTC-PERP_orderbook_delta_logger.csv """
+    filename = f"{datetime.datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')}_{'-'.join(spot_market.split('/'))}_" \
+               f"{'-'.join(perp_future.split('-'))}_{base_filename}.csv"
+    return os.path.join(folder, filename)
+
+
 @dataclass(frozen=True)
 class Parameters:
     """ Parameters to use when running visualizer """
@@ -22,8 +29,9 @@ class Parameters:
     # Size of window in pixels
     window_size: (int, int) = (1400, 850)
     # Log live data to a csv file, use False to disable
-    logfile: Union[str, bool] = os.path.join(
-        "data",
-        f"{datetime.datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')}_orderbook_delta_logger_"
-        f"{'_'.join(spot_market.split('/'))}_{'_'.join(perp_future.split('-'))}.csv"
+    logfile: Union[str, bool] = get_formatted_filepath(
+        folder="data",
+        base_filename="orderbook_delta_logger",
+        spot_market=spot_market,
+        perp_future=perp_future
     )
