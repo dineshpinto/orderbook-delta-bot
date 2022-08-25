@@ -98,7 +98,7 @@ async fn main() {
     log::info!("Order size and precision check...PASS");
 
     // Set up bollinger bands
-    let mut bb = ta::indicators::BollingerBands::new(
+    let mut bollinger_bands = ta::indicators::BollingerBands::new(
         settings.bb_period,
         settings.bb_std_dev,
     ).unwrap();
@@ -109,41 +109,53 @@ async fn main() {
     let mut current_side: helpers::Side = helpers::Side::default();
     let mut price = rust_decimal::Decimal::default();
 
-    log::info!("Setting trigger in {:?} iterations (approx {:?}s)...",
+    log::info!("Setting trigger after {:?} samples, each sample is {:?}s (total = {:?}s)...",
         settings.bb_period,
-        settings.bb_period as u64 * settings.time_delta
+        settings.sampling_time,
+        settings.bb_period as u64 * settings.sampling_time
     );
 
     loop {
         count += 1;
-        // Sleep before loop logic to handle continue statements
-        std::thread::sleep(std::time::Duration::from_secs(settings.time_delta));
+        let mut bid_ask_delta = 0.0;
 
-        // Get orderbook
-        let order_book = api.request(
-            ftx::rest::GetOrderBook {
-                market_name: String::from(&settings.market_name),
-                depth: Option::from(settings.orderbook_depth),
+        for _ in 0..settings.sampling_time {
+            // Get orderbook
+            let order_book = api.request(
+                ftx::rest::GetOrderBook {
+                    market_name: String::from(&settings.market_name),
+                    depth: Option::from(settings.orderbook_depth),
+                }
+            ).await;
+            let order_book = match order_book {
+                Err(e) => {
+                    // Continue loop if getting orderbook fails
+                    log::error!("Error: {:?}", e);
+                    continue;
+                }
+                Ok(o) => o
+            };
+
+            // Calculate values used for analysis
+            let mut total_bid_volume = rust_decimal::Decimal::from(0);
+            let mut total_ask_volume = rust_decimal::Decimal::from(0);
+
+            for idx in 0..settings.orderbook_depth as usize {
+                total_bid_volume += order_book.bids[idx].1;
+                total_ask_volume += order_book.asks[idx].1;
             }
-        ).await;
-        let order_book = match order_book {
-            Err(e) => {
-                // Continue loop is getting orderbook fails
-                log::error!("Error: {:?}", e);
-                continue;
-            }
-            Ok(o) => o
-        };
+            bid_ask_delta += rust_decimal::prelude::ToPrimitive::to_f64(
+                &(total_bid_volume - total_ask_volume)).unwrap();
 
-        // Calculate values used for analysis
-        let perp_delta = rust_decimal::prelude::ToPrimitive::to_f64(
-            &(order_book.bids[0].1 - order_book.asks[0].1)).unwrap();
-        let out = ta::Next::next(&mut bb, perp_delta);
-        let bb_lower = out.lower;
-        let bb_upper = out.upper;
+            log::debug!("bid_ask_delta={:.2}", &bid_ask_delta);
 
-        log::debug!("perp_delta={:.2}, bb_lower={:.2}, bb_upper={:.2}",
-            perp_delta, bb_lower, bb_upper);
+            std::thread::sleep(std::time::Duration::from_secs(1));
+        }
+
+        let bb = ta::Next::next(&mut bollinger_bands, bid_ask_delta);
+
+        log::info!("bid_ask_delta={:.2}, bb_lower={:.2}, bb_upper={:.2}",
+            bid_ask_delta, bb.lower, bb.upper);
 
         // Only perform further calculation if bb_period is passed
         if count > settings.bb_period {
@@ -152,7 +164,7 @@ async fn main() {
             }
 
             // Entry conditions
-            if perp_delta > bb_upper || perp_delta < bb_lower {
+            if bid_ask_delta > bb.upper || bid_ask_delta < bb.lower {
                 // Get current price
                 let price_result = api.request(
                     ftx::rest::GetFuture {
@@ -172,7 +184,7 @@ async fn main() {
                 // Create local variables to handle side
                 let mut _side: helpers::Side = helpers::Side::Buy;
 
-                if perp_delta > bb_upper {
+                if bid_ask_delta > bb.upper {
                     // Enter short position
                     _side = helpers::Side::Sell;
                     price = bid_price;
@@ -181,10 +193,10 @@ async fn main() {
                     if _side == current_side { continue; } else { current_side = _side }
 
                     log::info!(
-                        "Perp delta above upper bb, {:?} at {:?}",
+                        "Bid-ask delta above upper bb, {:?} at {:?}",
                         _side, price
                     );
-                } else if perp_delta < bb_lower {
+                } else if bid_ask_delta < bb.lower {
                     // Enter long position
                     _side = helpers::Side::Buy;
                     price = ask_price;
@@ -193,7 +205,7 @@ async fn main() {
                     if _side == current_side { continue; } else { current_side = _side }
 
                     log::info!(
-                        "Perp delta below lower bb, {:?} at {:?}",
+                        "Bid-ask delta below lower bb, {:?} at {:?}",
                         _side, price
                     );
                 }
@@ -231,14 +243,13 @@ async fn main() {
                                 &api, &settings.market_name,
                             )
                         );
-                        futures::executor::block_on(
-                            order_handler::cancel_all_trigger_orders(
-                                &api, &settings.market_name,
-                            )
-                        );
                     }
+                    futures::executor::block_on(
+                        order_handler::cancel_all_trigger_orders(
+                            &api, &settings.market_name,
+                        )
+                    );
 
-                    // TODO: Use Kelly criterion for order sizing
                     // Place order on FTX
                     let order_placed = futures::executor::block_on(
                         order_handler::place_market_order(
@@ -267,7 +278,6 @@ async fn main() {
                     );
 
                     // If unable to place TP or SL, cancel all orders
-                    // TODO: Market close position in event of failure
                     if !triggers_placed {
                         log::warn!("Cancelling all orders...");
                         let order_closed = futures::executor::block_on(

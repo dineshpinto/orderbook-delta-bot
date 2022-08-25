@@ -1,7 +1,6 @@
 //! A set of functions to handle placing market or limit orders,
 //! trigger orders and canceling orders
 
-
 /// Create a market order on FTX
 pub(crate) async fn place_market_order(
     api: &ftx::rest::Rest,
@@ -41,7 +40,8 @@ pub(crate) async fn get_open_position(api: &ftx::rest::Rest, market_name: &str) 
     let positions = api.request(ftx::rest::GetPositions {}).await.unwrap();
 
     for position in positions {
-        if position.future == market_name {
+        if position.future == market_name && position.open_size != rust_decimal::Decimal::from(0) {
+            log::debug!("{:?}", position);
             return true;
         }
     }
@@ -49,7 +49,7 @@ pub(crate) async fn get_open_position(api: &ftx::rest::Rest, market_name: &str) 
 }
 
 
-/// Close postion at market
+/// Close position at market
 pub(crate) async fn market_close_order(api: &ftx::rest::Rest, market_name: &str) -> bool {
     let positions = api.request(ftx::rest::GetPositions {}).await.unwrap();
 
@@ -99,7 +99,7 @@ pub(crate) async fn cancel_all_trigger_orders(api: &ftx::rest::Rest, market_name
             true
         }
         Err(e) => {
-            log::error!("Unable to cancel orders Err: {:?}, panicking!", e);
+            log::error!("Unable to cancel orders Err: {:?}", e);
             false
         }
     };

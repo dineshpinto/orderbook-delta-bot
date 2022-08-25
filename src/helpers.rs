@@ -5,13 +5,13 @@
 pub(crate) struct SettingsFile {
     /// Name of futures market on FTX
     pub(crate) market_name: String,
-    /// Time delay (in seconds) between queries
-    pub(crate) time_delta: u64,
+    /// Time (in seconds) to sample orderbook, each sample is 1s
+    pub(crate) sampling_time: u64,
     /// Period of bollinger band
     pub(crate) bb_period: usize,
     /// Standard deviation of bollinger band
     pub(crate) bb_std_dev: f64,
-    /// Depth of orderbook
+    /// Depth of orderbook to sum
     pub(crate) orderbook_depth: u32,
     /// Make live trades or not
     pub(crate) live: bool,
