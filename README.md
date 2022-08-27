@@ -68,11 +68,11 @@ cargo build
 cargo run
 ```
 
-## Orderbook Delta GUI (optional)
+## Orderbook Delta GUI (optional delta strategy tester)
 
-To visualize the orderbook delta live, use the orderbook-delta-visualizer. It's written in Python, with plotting 
-handled by Dash and Plotly, and it contains a set of configurable parameters and strategies. 
-See `orderbook-delta-visualizer/` for more details.
+To test out new delta strategies and visualize them live, use the orderbook-delta-visualizer. 
+It's written in Python, with plotting handled by Dash and Plotly, and contains a set of configurable parameters 
+and strategies. See `orderbook-delta-visualizer/` for more details.
 
 [GUI](https://user-images.githubusercontent.com/15251343/176155957-e6096eb1-a1ef-4373-b66e-7ebaa83b5b84.mov)
 
@@ -83,7 +83,7 @@ See `orderbook-delta-visualizer/` for more details.
 | Name              | Explanation                                                            |
 |-------------------|------------------------------------------------------------------------|
 | `market_name`     | Name of futures market on FTX (default: BTC-PERP)                      |
-| `sampling_time`   | Time (in seconds) to sample orderbook, each sample is 1s (default: 5)  |
+| `sampling_time`   | Time (in seconds) to sample orderbook, each sample is 1s (default: 60) |
 | `bb_period`       | Bollinger band period (default: 20)                                    |
 | `bb_std_dev`      | Bollinger band standard deviation (default: 2)                         |
 | `orderbook_depth` | Depth of orderbook to sum (default: 5)                                 |
