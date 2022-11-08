@@ -9,7 +9,7 @@ These deviations could be caused by over-enthusiastic and over-leveraged market 
 We counter-trade those deviations, and enter short/long positions based on triggers given by a large deviation
 (> 2 SDs) on the orderbook delta from a 20 period rolling bollinger band.
 
-We are testing this with BTC-PERP on FTX, which has good liquidity and small spreads (and FTX has the best API
+We are testing this with BTC-PERP on FTX, which has good liquidity and small spreads (~~and FTX~~ now Binance, praise be to CZ, has the best API
 in the business). In principle, the scheme could be modified for lower liquidity pairs too, perhaps by adjusting
 the sampling period and market depth for generating triggers.
 
